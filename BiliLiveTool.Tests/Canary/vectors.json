@@ -1,0 +1,80 @@
+{
+  "_comment": "由 generate_vectors.py 从 .refs/source-refs 参照源执行生成，勿手改。",
+  "appSign": {
+    "basic": {
+      "input": {
+        "room_id": "1",
+        "ts": "1700000000"
+      },
+      "expected": {
+        "appkey": "aae92bc66f3edfab",
+        "room_id": "1",
+        "ts": "1700000000",
+        "sign": "bf5681f1d33af95624999d232d512663"
+      }
+    },
+    "special": {
+      "input": {
+        "room_id": "42",
+        "title": "测试&直播=问答?#1",
+        "ts": "1700000001"
+      },
+      "expected": {
+        "appkey": "aae92bc66f3edfab",
+        "room_id": "42",
+        "title": "测试&直播=问答?#1",
+        "ts": "1700000001",
+        "sign": "ac4b90d9fa2df70f7f6a321d5d385f2a"
+      }
+    }
+  },
+  "mixinKey": {
+    "orig": "7cd084941338484aae1ad9425b84077c4932caff0ff746eab6f01bf08b70ac45",
+    "expected": "ea1db124af3c7062474693fa704f4ff8"
+  },
+  "wbi": {
+    "webLocation": {
+      "input": {
+        "web_location": "444.8"
+      },
+      "imgKey": "7cd084941338484aae1ad9425b84077c",
+      "subKey": "4932caff0ff746eab6f01bf08b70ac45",
+      "wts": 1700000000,
+      "expected": {
+        "web_location": "444.8",
+        "wts": "1700000000",
+        "w_rid": "84884cbabf626d8de694922cfc36ca97"
+      }
+    },
+    "filter": {
+      "input": {
+        "web_location": "444.8",
+        "note": "a!b'c(d)e*f"
+      },
+      "imgKey": "7cd084941338484aae1ad9425b84077c",
+      "subKey": "4932caff0ff746eab6f01bf08b70ac45",
+      "wts": 1700000000,
+      "expected": {
+        "note": "abcdef",
+        "web_location": "444.8",
+        "wts": "1700000000",
+        "w_rid": "bf3a702e5f9159016f87292e46348635"
+      }
+    },
+    "danmuInfo": {
+      "input": {
+        "id": "12345",
+        "type": "0"
+      },
+      "imgKey": "7cd084941338484aae1ad9425b84077c",
+      "subKey": "4932caff0ff746eab6f01bf08b70ac45",
+      "wts": 1700000000,
+      "expected": {
+        "id": "12345",
+        "type": "0",
+        "wts": "1700000000",
+        "w_rid": "f115e7e37d509eefc9fd5e4808116e87"
+      }
+    }
+  }
+}
