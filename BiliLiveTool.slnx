@@ -1,0 +1,7 @@
+<Solution>
+  <Project Path="BiliLiveTool.App/BiliLiveTool.App.csproj" />
+  <Project Path="BiliLiveTool.Core/BiliLiveTool.Core.csproj" />
+  <Project Path="BiliLiveTool.Infrastructure/BiliLiveTool.Infrastructure.csproj" />
+  <Project Path="BiliLiveTool.Services/BiliLiveTool.Services.csproj" />
+  <Project Path="BiliLiveTool.UI/BiliLiveTool.UI.csproj" />
+</Solution>
