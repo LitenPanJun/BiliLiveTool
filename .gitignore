@@ -1,0 +1,54 @@
+# 参考资料（含原 Python 实现与规范文档），不入库
+.refs/
+
+# OpenCode 本地数据（会话/认证等）
+.opencode/
+
+# .NET / Visual Studio 标准忽略项
+bin/
+obj/
+out/
+artifacts/
+*.user
+*.userosscache
+*.suo
+*.userprefs
+*.sln.docstates
+.vs/
+.idea/
+*.DotSettings.user
+
+# 构建产物与发布包
+publish/
+publish/**/
+*.publish.xml
+*.appx
+*.appxbundle
+*.appxupload
+nupkg/
+*.nupkg
+*.snupkg
+packages/
+!packages/build/
+
+# 测试与覆盖率
+TestResults/
+coverage*/
+*.coverage
+*.coveragexml
+coverage.opencover.xml
+
+# 日志与临时文件
+*.log
+*.tmp
+*.bak
+*.swp
+*~
+
+# OS 文件
+.DS_Store
+Thumbs.db
+
+# 本地配置（含非密钥偏好，敏感凭据走系统钥匙串）
+config.json
+config.json.bak
