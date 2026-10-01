@@ -45,10 +45,12 @@ public sealed class BilibiliApiClient : IBilibiliApiClient
         // 统一在 SendAsync 中挂到内容对象上，GET 以空体携带，保持与 data.py 全局 header 一致
     }
 
+    // 对应原 update_cookies 的整体赋值语义（self.cookies = cookies）：替换而非合并
     public void UpdateCookies(IReadOnlyDictionary<string, SecureCredential> cookies)
     {
         lock (_gate)
         {
+            _cookies.Clear();
             foreach (var (key, value) in cookies)
                 _cookies[key] = value;
         }

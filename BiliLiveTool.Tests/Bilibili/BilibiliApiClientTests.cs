@@ -69,6 +69,30 @@ public class BilibiliApiClientTests
         request.ContentHeaders["content-type"].Should().Be("application/x-www-form-urlencoded; charset=UTF-8");
     }
 
+    [Fact]
+    public async Task UpdateCookies_Replaces_Whole_Cookie_Set()
+    {
+        // 与原 update_cookies 的整体赋值语义一致：换 Cookie 集时旧键必须消失
+        var (client, handler) = Create();
+        handler.Responder = _ => StubHandler.Json(NavJson);
+
+        using var oldSes = new SecureCredential("old-ses");
+        using var oldBuvid = new SecureCredential("old-b3");
+        client.UpdateCookies(new Dictionary<string, SecureCredential>
+        {
+            ["SESSDATA"] = oldSes,
+            ["buvid3"] = oldBuvid,
+        });
+
+        using var newSes = new SecureCredential("new-ses");
+        client.UpdateCookies(new Dictionary<string, SecureCredential> { ["SESSDATA"] = newSes });
+
+        await client.GetUserInfoAsync(CancellationToken.None);
+
+        var cookie = handler.Requests.Should().ContainSingle().Subject.Headers["Cookie"];
+        cookie.Should().Contain("SESSDATA=new-ses").And.NotContain("buvid3=");
+    }
+
     // --- 弹幕发送 ---
 
     [Fact]

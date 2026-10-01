@@ -8,7 +8,10 @@ namespace BiliLiveTool.Core.Bilibili;
 /// </summary>
 public interface IBilibiliApiClient
 {
-    /// <summary>更新随请求透传的 Cookie（值为 SecureCredential，禁止裸字符串）。</summary>
+    /// <summary>
+    /// 替换随请求透传的整套 Cookie（与原 update_cookies 的整体赋值语义一致）；
+    /// 值为 SecureCredential，禁止裸字符串。
+    /// </summary>
     void UpdateCookies(IReadOnlyDictionary<string, SecureCredential> cookies);
 
     // --- 扫码登录 ---
