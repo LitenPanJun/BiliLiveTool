@@ -4,7 +4,7 @@ B站直播伴侣桌面工具：扫码登录与多账号管理、分区/标题/�
 
 ## 项目状态
 
-Greenfield 阶段：**尚无 .NET 源码**，按 P0（安全与骨架）→ P1（服务与弹幕核心）→ P2（界面与发布）分阶段推进。协作约定见 [AGENTS.md](AGENTS.md)。
+重构已完成：P0（安全与骨架）→ P1（服务与弹幕核心）→ P2（界面与发布）三阶段全部落地，5 工程可构建、全量单测绿；GitHub Actions 在 `win-x64`/`linux-x64` 上构建、测试并产出自包含发布包。协作约定见 [AGENTS.md](AGENTS.md)。
 
 ## 功能特性
 
@@ -28,12 +28,12 @@ Greenfield 阶段：**尚无 .NET 源码**，按 P0（安全与骨架）→ P1�
 
 ## 构建与测试
 
-Solution 建立后使用：
-
 ```bash
 dotnet build
 dotnet test                                               # 全量测试
 dotnet test --filter "FullyQualifiedName~<名字>"           # 单个测试
+dotnet publish BiliLiveTool.App/BiliLiveTool.App.csproj \
+  -c Release -r linux-x64 --self-contained true           # 自包含发布（win-x64 同理）
 ```
 
 工程约束（`Nullable`、`TreatWarningsAsErrors`、依赖钉版等）见 [AGENTS.md](AGENTS.md)。
