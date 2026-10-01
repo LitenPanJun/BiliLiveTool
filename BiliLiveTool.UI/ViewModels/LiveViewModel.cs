@@ -11,6 +11,13 @@ using Microsoft.Extensions.Logging;
 
 namespace BiliLiveTool.UI.ViewModels;
 
+/// <summary>推流端点行：地址与码分列，均仅可经复制出栈。</summary>
+public sealed record EndpointRow(
+    string Label,
+    string Addr,
+    string Code,
+    IAsyncRelayCommand<string?> CopyCommand);
+
 /// <summary>
 /// 直播页：分区选择、标题公告、开播停播与推流码展示，
 /// 对照原 StreamPanel/RtmpPanel：doToggle 先更新标题公告再开播，
@@ -39,15 +46,20 @@ public sealed partial class LiveViewModel : ObservableObject
     [ObservableProperty] private bool _isLive;
     [ObservableProperty] private bool _isBusy;
     [ObservableProperty] private string _statusText = "";
-    [ObservableProperty] private string _rtmp1Addr = "";
-    [ObservableProperty] private string _rtmp1Code = "";
-    [ObservableProperty] private string _rtmp2Addr = "";
-    [ObservableProperty] private string _rtmp2Code = "";
-    [ObservableProperty] private string _srtAddr = "";
-    [ObservableProperty] private string _srtCode = "";
+
+    /// <summary>推流端点行（复制命令随行携带，避免视图回溯主 VM）。</summary>
+    public ObservableCollection<EndpointRow> Endpoints { get; } = [];
 
     /// <summary>是否已有可展示的推流端点。</summary>
-    public bool HasEndpoints => Rtmp1Code.Length > 0 || Rtmp2Code.Length > 0 || SrtCode.Length > 0;
+    public bool HasEndpoints => Endpoints.Count > 0;
+
+    /// <summary>空闲态（开播/停播按钮可用性绑定）。</summary>
+    public bool IsIdle => !IsBusy;
+
+    /// <summary>未开播徽标绑定。</summary>
+    public bool IsOffline => !IsLive;
+
+    partial void OnIsLiveChanged(bool value) => OnPropertyChanged(nameof(IsOffline));
 
     public LiveViewModel(
         LiveService live,
@@ -279,6 +291,8 @@ public sealed partial class LiveViewModel : ObservableObject
 
     partial void OnSelectedParentChanged(string value) => RebuildChildren(value);
 
+    partial void OnIsBusyChanged(bool value) => OnPropertyChanged(nameof(IsIdle));
+
     private void RebuildChildren(string parent)
     {
         ChildNames.Clear();
@@ -344,20 +358,19 @@ public sealed partial class LiveViewModel : ObservableObject
 
     private void ApplyEndpoints(LiveStreamEndpoints endpoints)
     {
-        Rtmp1Addr = endpoints.Rtmp1.Addr;
-        Rtmp1Code = endpoints.Rtmp1.Code;
-        Rtmp2Addr = endpoints.Rtmp2.Addr;
-        Rtmp2Code = endpoints.Rtmp2.Code;
-        SrtAddr = endpoints.Srt.Addr;
-        SrtCode = endpoints.Srt.Code;
+        Endpoints.Clear();
+        if (endpoints.Rtmp1.Addr.Length > 0 || endpoints.Rtmp1.Code.Length > 0)
+            Endpoints.Add(new EndpointRow("RTMP", endpoints.Rtmp1.Addr, endpoints.Rtmp1.Code, CopyCommand));
+        if (endpoints.Rtmp2.Addr.Length > 0 || endpoints.Rtmp2.Code.Length > 0)
+            Endpoints.Add(new EndpointRow("RTMP 备线", endpoints.Rtmp2.Addr, endpoints.Rtmp2.Code, CopyCommand));
+        if (endpoints.Srt.Addr.Length > 0 || endpoints.Srt.Code.Length > 0)
+            Endpoints.Add(new EndpointRow("SRT", endpoints.Srt.Addr, endpoints.Srt.Code, CopyCommand));
         OnPropertyChanged(nameof(HasEndpoints));
     }
 
     private void ClearEndpoints()
     {
-        Rtmp1Addr = Rtmp1Code = "";
-        Rtmp2Addr = Rtmp2Code = "";
-        SrtAddr = SrtCode = "";
+        Endpoints.Clear();
         OnPropertyChanged(nameof(HasEndpoints));
     }
 
