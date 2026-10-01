@@ -1,5 +1,7 @@
+using System.Reflection;
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using System.Text.Json.Serialization;
 using BiliLiveTool.Core.Auth;
 using BiliLiveTool.Core.Config;
 using Microsoft.Extensions.Logging;
@@ -24,6 +26,10 @@ public sealed class FileConfigStore : IAccountStore, IAppConfigStore
         WriteIndented = true,
         PropertyNameCaseInsensitive = true,
     };
+
+    private static readonly string UidJsonName =
+        typeof(AccountRecord).GetProperty(nameof(AccountRecord.Uid))!
+            .GetCustomAttribute<JsonPropertyNameAttribute>()!.Name!;
 
     private readonly object _gate = new();
     private readonly string _path;
@@ -263,27 +269,32 @@ public sealed class FileConfigStore : IAccountStore, IAppConfigStore
 
     /// <summary>
     /// 属性名白名单过滤（规范化匹配，兼容 last_title / LastTitle 等风格）；
-    /// 白名单外的键（cookies、SESSDATA 等机密）一律丢弃。
+    /// 产出键用 JsonPropertyName（反序列化按其匹配），白名单外的键
+    /// （cookies、SESSDATA 等机密）一律丢弃。
     /// </summary>
     private static JsonObject? FilterLegacy(JsonObject source, string? fallbackUid)
     {
         var map = new Dictionary<string, string>(StringComparer.Ordinal);
         foreach (var property in typeof(AccountRecord).GetProperties())
-            map[Normalize(property.Name)] = property.Name;
+        {
+            var jsonName = property.GetCustomAttribute<JsonPropertyNameAttribute>()?.Name
+                ?? property.Name;
+            map[Normalize(jsonName)] = jsonName;
+        }
 
         var target = new JsonObject();
         foreach (var (key, value) in source)
         {
-            if (!map.TryGetValue(Normalize(key), out var propertyName))
+            if (!map.TryGetValue(Normalize(key), out var jsonName))
                 continue; // 非白名单：含一切机密字段
-            target[propertyName] = value?.DeepClone();
+            target[jsonName] = value?.DeepClone();
         }
 
-        if (target[nameof(AccountRecord.Uid)] is null)
+        if (target[UidJsonName] is null)
         {
             if (fallbackUid is null)
                 return null;
-            target[nameof(AccountRecord.Uid)] = fallbackUid;
+            target[UidJsonName] = fallbackUid;
         }
 
         return target;
