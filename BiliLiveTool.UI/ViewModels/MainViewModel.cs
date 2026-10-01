@@ -44,6 +44,10 @@ public sealed partial class MainViewModel : ObservableObject
     [ObservableProperty]
     private string _statusText = "就绪";
 
+    /// <summary>版本号（对照原 get_version，单源于 Directory.Build.props）。</summary>
+    public string VersionText { get; } = "v" +
+        (typeof(MainViewModel).Assembly.GetName().Version?.ToString(3) ?? "0.0.0");
+
     public MainViewModel(
         UserService user,
         AuthSessionStore sessions,
