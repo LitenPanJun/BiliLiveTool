@@ -1,8 +1,10 @@
 using BiliLiveTool.Core.Auth;
 using BiliLiveTool.Core.Bilibili;
+using BiliLiveTool.Core.Config;
 using BiliLiveTool.Core.Security;
 using BiliLiveTool.Infrastructure.Bilibili;
 using BiliLiveTool.Services.Auth;
+using BiliLiveTool.Services.Config;
 using BiliLiveTool.Services.Danmu;
 using BiliLiveTool.Services.Live;
 using BiliLiveTool.Services.User;
@@ -26,6 +28,7 @@ internal static class ServiceCollectionExtensions
         services.AddSingleton<ISecretMasker, SecretMasker>();
         services.AddSingleton<IAccountStore, InMemoryAccountStore>();
         services.AddSingleton<ISecretVault, InMemorySecretVault>();
+        services.AddSingleton<IAppConfigStore, InMemoryAppConfigStore>();
 
         // 日志：唯一提供者为 UiLogSink（写入即脱敏），最低级别 Debug
         // 以保未知弹幕 cmd 的 debug 记录可见
