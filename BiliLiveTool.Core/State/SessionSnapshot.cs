@@ -18,4 +18,7 @@ public sealed record SessionSnapshot
     public SecureCredential? SesData { get; init; }
     public SecureCredential? BiliJct { get; init; }
     public SecureCredential? Buvid3 { get; init; }
+
+    /// <summary>csrf 统一派生自 bili_jct，不单独留存明文副本。</summary>
+    public SecureCredential? Csrf => BiliJct;
 }
