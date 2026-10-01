@@ -1,0 +1,42 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="clr-namespace:BiliLiveTool.UI.ViewModels"
+             x:Class="BiliLiveTool.UI.Views.DialogView"
+             x:DataType="vm:DialogViewModel">
+    <Border Classes="dialog-overlay">
+        <Border Classes="dialog-card"
+                HorizontalAlignment="Center"
+                VerticalAlignment="Center">
+            <StackPanel Spacing="12">
+                <TextBlock Classes="dialog-title" Text="{Binding Title}" />
+                <TextBlock Text="{Binding Message}"
+                           TextWrapping="Wrap" />
+
+                <!-- 人脸验证等外链：只读可选 + 复制按钮（对照 URL 仅可复制） -->
+                <StackPanel Spacing="6"
+                            IsVisible="{Binding Url, Converter={x:Static ObjectConverters.IsNotNull}}">
+                    <TextBox Classes="input"
+                             Text="{Binding Url}"
+                             IsReadOnly="True"
+                             TextWrapping="Wrap" />
+                    <Button Content="复制链接"
+                            HorizontalAlignment="Left"
+                            Click="OnCopyUrl" />
+                </StackPanel>
+
+                <StackPanel Orientation="Horizontal"
+                            HorizontalAlignment="Right"
+                            Spacing="8">
+                    <Button Classes="dialog-cancel"
+                            Content="取消"
+                            IsVisible="{Binding IsConfirm}"
+                            Command="{Binding RejectCommand}" />
+                    <Button Classes="dialog-primary"
+                            Content="确定"
+                            IsDefault="True"
+                            Command="{Binding AcceptCommand}" />
+                </StackPanel>
+            </StackPanel>
+        </Border>
+    </Border>
+</UserControl>

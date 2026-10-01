@@ -1,0 +1,75 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <!--
+        全局统一样式（对照原 theme.css/App.vue/StreamPanel/MessageModal
+        四处重复与 z-index 999/1500/2000/9999 混乱，指南步骤 2 收敛到单文件）。
+    -->
+    <Styles.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.ThemeDictionaries>
+                <ResourceDictionary x:Key="Light">
+                    <SolidColorBrush x:Key="CardBackgroundBrush" Color="#FFFFFF" />
+                    <SolidColorBrush x:Key="OverlayBrush" Color="#66000000" />
+                </ResourceDictionary>
+                <ResourceDictionary x:Key="Dark">
+                    <SolidColorBrush x:Key="CardBackgroundBrush" Color="#2E2E2E" />
+                    <SolidColorBrush x:Key="OverlayBrush" Color="#99000000" />
+                </ResourceDictionary>
+            </ResourceDictionary.ThemeDictionaries>
+            <SolidColorBrush x:Key="CardBorderBrush" Color="#22000000" />
+        </ResourceDictionary>
+    </Styles.Resources>
+
+    <!-- 弹窗遮罩与卡片：单实现覆盖层（统一 z-index 语义） -->
+    <Style Selector="Border.dialog-overlay">
+        <Setter Property="Background" Value="{DynamicResource OverlayBrush}" />
+        <Setter Property="HorizontalAlignment" Value="Stretch" />
+        <Setter Property="VerticalAlignment" Value="Stretch" />
+    </Style>
+
+    <Style Selector="Border.dialog-card">
+        <Setter Property="Background" Value="{DynamicResource CardBackgroundBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource CardBorderBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="8" />
+        <Setter Property="Padding" Value="20" />
+        <Setter Property="MinWidth" Value="360" />
+        <Setter Property="MaxWidth" Value="520" />
+        <Setter Property="BoxShadow" Value="0 4 24 0 #66000000" />
+    </Style>
+
+    <Style Selector="TextBlock.dialog-title">
+        <Setter Property="FontSize" Value="16" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+    </Style>
+
+    <Style Selector="Button.dialog-primary">
+        <Setter Property="MinWidth" Value="88" />
+        <Setter Property="HorizontalAlignment" Value="Right" />
+    </Style>
+
+    <Style Selector="Button.dialog-cancel">
+        <Setter Property="MinWidth" Value="88" />
+    </Style>
+
+    <!-- 面板通用（各 Tab 复用，避免逐视图重复） -->
+    <Style Selector="Button.primary">
+        <Setter Property="MinWidth" Value="96" />
+        <Setter Property="Padding" Value="12,6" />
+    </Style>
+
+    <Style Selector="TextBox.input">
+        <Setter Property="CornerRadius" Value="4" />
+    </Style>
+
+    <Style Selector="TextBlock.section-title">
+        <Setter Property="FontSize" Value="14" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="Opacity" Value="0.85" />
+    </Style>
+
+    <Style Selector="TextBlock.status">
+        <Setter Property="FontSize" Value="12" />
+        <Setter Property="Opacity" Value="0.7" />
+    </Style>
+</Styles>
