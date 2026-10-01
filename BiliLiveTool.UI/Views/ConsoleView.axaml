@@ -1,0 +1,28 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="clr-namespace:BiliLiveTool.UI.ViewModels"
+             x:Class="BiliLiveTool.UI.Views.ConsoleView"
+             x:DataType="vm:ConsoleViewModel">
+    <Grid Margin="16"
+          RowDefinitions="Auto,*"
+          RowSpacing="8">
+        <DockPanel Grid.Row="0">
+            <TextBlock Classes="section-title"
+                       DockPanel.Dock="Left"
+                       VerticalAlignment="Center"
+                       Text="控制台" />
+            <Button HorizontalAlignment="Right"
+                    Content="清空"
+                    Command="{Binding ClearCommand}" />
+        </DockPanel>
+
+        <Border Grid.Row="1"
+                Classes="dialog-card"
+                Padding="8">
+            <ListBox x:Name="LogList"
+                     FontSize="12"
+                     ItemsSource="{Binding Lines}"
+                     Background="Transparent" />
+        </Border>
+    </Grid>
+</UserControl>
