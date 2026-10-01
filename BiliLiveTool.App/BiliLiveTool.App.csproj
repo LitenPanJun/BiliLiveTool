@@ -28,6 +28,9 @@
 
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
+    <!-- 产品标识固定 BiliLiveTool：产物/可执行文件名不带工程后缀 -->
+    <AssemblyName>BiliLiveTool</AssemblyName>
+    <Product>BiliLiveTool</Product>
     <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>

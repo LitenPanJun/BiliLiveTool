@@ -26,7 +26,7 @@ namespace BiliLiveTool.App;
 /// </summary>
 public partial class App : Application
 {
-    private static readonly Uri IconUri = new("avares://BiliLiveTool.App/Assets/app.ico");
+    private static readonly Uri IconUri = new("avares://BiliLiveTool/Assets/app.ico");
 
     private ServiceProvider? _provider;
     private MainWindow? _window;

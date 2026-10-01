@@ -4,5 +4,6 @@ using System.Runtime.CompilerServices;
 // 向服务层（帧编解码消费方）、应用组合根（SecretMasker 装配）
 // 与测试工程开放。
 [assembly: InternalsVisibleTo("BiliLiveTool.Services")]
-[assembly: InternalsVisibleTo("BiliLiveTool.App")]
+// App 产品标识为 BiliLiveTool（AssemblyName 无工程后缀）
+[assembly: InternalsVisibleTo("BiliLiveTool")]
 [assembly: InternalsVisibleTo("BiliLiveTool.Tests")]
