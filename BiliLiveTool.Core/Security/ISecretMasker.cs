@@ -4,7 +4,8 @@ namespace BiliLiveTool.Core.Security;
 public interface ISecretMasker
 {
     /// <summary>
-    /// 掩码字符串：保留前后各 N 位，中间以 *** 替代；长度不足时返回 ***。
+    /// 掩码字符串（util.mask_string 语义）：空值返回空串；长度不足时按位补 *；
+    /// 否则保留前后各 N 位，中间以 5 个 * 替代。
     /// </summary>
     string MaskString(string? value, int visibleStart = 4, int visibleEnd = 4);
 

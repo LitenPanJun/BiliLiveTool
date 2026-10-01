@@ -5,9 +5,9 @@ using BiliLiveTool.Core.Security;
 namespace BiliLiveTool.Infrastructure.Bilibili;
 
 /// <summary>
-/// 日志脱敏实现，复刻原 bilibili_api.py 的 _mask_data / _mask_url 与
-/// danmu_service.py 内联的 _mask_string 语义（原 util.mask_string 源未归档，
-/// 以该内联同构实现为准：前 N 位 + *** + 后 N 位，长度不足返回 ***）。
+/// 日志脱敏实现，复刻原 bilibili_api.py 的 _mask_data / _mask_url，
+/// 掩码核心为 util.mask_string：空值返回空串、长度不足按位补 *、
+/// 否则前 N 位 + 5 个 * + 后 N 位。
 /// </summary>
 internal sealed class SecretMasker : ISecretMasker
 {
@@ -25,11 +25,15 @@ internal sealed class SecretMasker : ISecretMasker
         "uid", "room_id", "key", "token", "csrf", "csrf_token", "access_key", "qrcode_key",
     ];
 
+    // 对应 util.mask_string：空值返回空串；长度不足按位补 *；否则前 N + 5 星 + 后 N
     public string MaskString(string? value, int visibleStart = 4, int visibleEnd = 4)
     {
-        if (string.IsNullOrEmpty(value) || value.Length <= visibleStart + visibleEnd)
-            return "***";
-        return string.Concat(value.AsSpan(0, visibleStart), "***", value.AsSpan(value.Length - visibleEnd));
+        if (string.IsNullOrEmpty(value)) return string.Empty;
+        if (value.Length <= visibleStart + visibleEnd) return new string('*', value.Length);
+        return string.Concat(
+            value.AsSpan(0, visibleStart),
+            "*****",
+            value.AsSpan(value.Length - visibleEnd));
     }
 
     public string MaskUrl(string url)
@@ -38,31 +42,46 @@ internal sealed class SecretMasker : ISecretMasker
             return url;
         try
         {
-            var uri = new Uri(url);
-            var query = uri.Query.TrimStart('?');
+            // 复刻 urlparse → parse_qs → urlencode(doseq=True)：
+            // 仅替换 query，scheme/path/fragment 原样保留
+            var hashIdx = url.IndexOf('#');
+            var head = hashIdx < 0 ? url : url[..hashIdx];
+            var fragment = hashIdx < 0 ? string.Empty : url[hashIdx..];
+            var queryIdx = head.IndexOf('?');
+            var query = head[(queryIdx + 1)..];
             if (query.Length == 0) return url;
 
             var changed = false;
-            var pairs = query.Split('&', StringSplitOptions.RemoveEmptyEntries).Select(pair =>
+            var rebuilt = new List<string>();
+            foreach (var pair in query.Split('&', StringSplitOptions.RemoveEmptyEntries))
             {
                 var idx = pair.IndexOf('=');
-                if (idx <= 0) return pair;
-                var k = pair[..idx];
-                if (!UrlSensitiveKeys.Contains(k, StringComparer.Ordinal)) return pair;
-                changed = true;
-                var v = pair[(idx + 1)..];
-                return $"{k}={MaskString(Uri.UnescapeDataString(v), 2, 2)}";
-            }).ToList();
+                if (idx <= 0) continue; // parse_qs 不收无 '=' 或空键项
+                var key = Uri.UnescapeDataString(pair[..idx]);
+                var value = Uri.UnescapeDataString(pair[(idx + 1)..]);
+                if (value.Length == 0) continue; // keep_blank_values=False：空值丢弃
 
+                if (UrlSensitiveKeys.Contains(key, StringComparer.Ordinal))
+                {
+                    value = MaskString(value, 2, 2);
+                    changed = true;
+                }
+                rebuilt.Add($"{QuotePlus(key)}={QuotePlus(value)}");
+            }
+
+            // 无敏感键命中时原串返回（含被 parse_qs 丢弃的项也不影响结果）
             if (!changed) return url;
-            var builder = new UriBuilder(uri) { Query = string.Join("&", pairs) };
-            return builder.Uri.AbsoluteUri;
+            return $"{head[..queryIdx]}?{string.Join('&', rebuilt)}{fragment}";
         }
         catch
         {
             return url;
         }
     }
+
+    // 复刻 Python quote_plus：EscapeDataString 的保留集与 quote 一致，另把 %20 归一为 +
+    private static string QuotePlus(string value) =>
+        Uri.EscapeDataString(value).Replace("%20", "+", StringComparison.Ordinal);
 
     public string MaskData(string json)
     {
