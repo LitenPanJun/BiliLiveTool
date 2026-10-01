@@ -21,6 +21,8 @@
     <PackageVersion Include="Microsoft.Extensions.Logging" Version="10.0.12" />
     <!-- 扫码登录二维码渲染 -->
     <PackageVersion Include="QRCoder" Version="1.8.0" />
+    <!-- 系统钥匙串（Windows 凭据管理器 / macOS Keychain / Linux Secret Service） -->
+    <PackageVersion Include="Latchkey" Version="0.1.0" />
   </ItemGroup>
   <ItemGroup>
     <!-- 测试栈 -->

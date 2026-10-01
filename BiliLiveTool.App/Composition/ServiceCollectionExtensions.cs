@@ -3,6 +3,7 @@ using BiliLiveTool.Core.Bilibili;
 using BiliLiveTool.Core.Config;
 using BiliLiveTool.Core.Security;
 using BiliLiveTool.Infrastructure.Bilibili;
+using BiliLiveTool.Infrastructure.Security;
 using BiliLiveTool.Services.Auth;
 using BiliLiveTool.Services.Config;
 using BiliLiveTool.Services.Danmu;
@@ -24,13 +25,13 @@ internal static class ServiceCollectionExtensions
 {
     public static IServiceCollection AddBiliLiveTool(this IServiceCollection services)
     {
-        // 安全基线：日志唯一出口 + 机密/账号存储（config.json 仅非密钥，
-        // 机密后端随后提交切换为系统钥匙串）
+        // 安全基线：日志唯一出口 + config.json 仅非密钥 + 机密走系统钥匙串
         services.AddSingleton<ISecretMasker, SecretMasker>();
         services.AddSingleton<FileConfigStore>();
         services.AddSingleton<IAccountStore>(sp => sp.GetRequiredService<FileConfigStore>());
         services.AddSingleton<IAppConfigStore>(sp => sp.GetRequiredService<FileConfigStore>());
-        services.AddSingleton<ISecretVault, InMemorySecretVault>();
+        services.AddSingleton<KeyringSecretVault>();
+        services.AddSingleton<ISecretVault>(sp => sp.GetRequiredService<KeyringSecretVault>());
 
         // 日志：唯一提供者为 UiLogSink（写入即脱敏），最低级别 Debug
         // 以保未知弹幕 cmd 的 debug 记录可见

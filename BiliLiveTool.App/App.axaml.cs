@@ -5,6 +5,8 @@ using Avalonia.Markup.Xaml;
 using Avalonia.Platform;
 using BiliLiveTool.App.Composition;
 using BiliLiveTool.Core.Config;
+using BiliLiveTool.Core.Security;
+using BiliLiveTool.Infrastructure.Security;
 using BiliLiveTool.Services.Auth;
 using BiliLiveTool.Services.Danmu;
 using BiliLiveTool.Services.Live;
@@ -40,6 +42,8 @@ public partial class App : Application
                 .AddBiliLiveTool()
                 .BuildServiceProvider();
 
+            WarnIfKeyringUnavailable();
+
             var main = _provider.GetRequiredService<MainViewModel>();
             _window = new MainWindow { DataContext = main };
             desktop.MainWindow = _window;
@@ -60,6 +64,16 @@ public partial class App : Application
         }
 
         base.OnFrameworkInitializationCompleted();
+    }
+
+    /// <summary>钥匙串不可用时告警：登录态仅驻留内存，重启需重扫码。</summary>
+    private void WarnIfKeyringUnavailable()
+    {
+        if (_provider?.GetService<ISecretVault>() is KeyringSecretVault { Available: false })
+        {
+            _provider.GetService<ILogger<App>>()?.LogWarning(
+                "系统钥匙串不可用：登录态仅驻留内存，重启需重新扫码");
+        }
     }
 
     private void SetupTray()
