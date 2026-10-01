@@ -9,9 +9,13 @@ vectors.json 才是冻结产物，测试只读取该产物。
 """
 
 import json
+import struct
 import sys
 import types
+import zlib
 from pathlib import Path
+
+import brotli
 
 ROOT = Path(__file__).resolve().parents[2]
 SRC = ROOT / ".refs" / "source-refs"
@@ -106,11 +110,82 @@ def main() -> None:
         "expected": wbi_ns["getMixinKey"](img_key + sub_key),
     }
 
+    # --- 帧编解码基准（公式复刻 danmu_service.py:260 send_packet 与 :298 解包）---
+    def build_packet(op: int, body: bytes, proto_ver: int = 1) -> bytes:
+        # struct.pack('!IHHII', 16+len(body), 16, proto_ver, op, 1)
+        return struct.pack("!IHHII", 16 + len(body), 16, proto_ver, op, 1) + body
+
+    def frames_desc(*frames: tuple[int, bytes]) -> list[dict]:
+        return [{"op": op, "bodyHex": body.hex()} for op, body in frames]
+
+    auth_body = (
+        '{"uid":123,"roomid":12345,"protover":3,'
+        '"platform":"web","type":2,"key":"e95f51TOKEN"}'
+    )
+    packet_encode = [
+        {"op": 7, "body": auth_body, "expectedHex": build_packet(7, auth_body.encode()).hex()},
+        {"op": 2, "body": "", "expectedHex": build_packet(2, b"").hex()},
+    ]
+
+    popularity = struct.pack("!I", 1000)
+    danmu_json = (
+        '{"cmd":"DANMU_MSG","info":[[0,1,25,16777215,1700000000,0,"abcd",0,""],'
+        '"测试弹幕",[42,"tester",1,0,0,10000,0,""]]}'
+    )
+    interact_json = '{"cmd":"INTERACT_WORD","data":{"uid":42,"uname":"tester","msg_type":1}}'
+    unknown_json = '{"cmd":"SOME_NEW_CMD","data":{}}'
+    auth_ok_json = '{"code":0}'
+
+    plain = (
+        build_packet(5, danmu_json.encode())
+        + build_packet(3, popularity)
+        + build_packet(8, auth_ok_json.encode())
+    )
+    zlib_inner = build_packet(5, interact_json.encode()) + build_packet(5, unknown_json.encode())
+    brotli_inner = build_packet(5, interact_json.encode()) + build_packet(3, popularity)
+
+    packet_decode = {
+        "plainMulti": {
+            "hex": plain.hex(),
+            "frames": frames_desc(
+                (5, danmu_json.encode()), (3, popularity), (8, auth_ok_json.encode())
+            ),
+            "expectError": False,
+        },
+        "zlibNested": {
+            "hex": build_packet(5, zlib.compress(zlib_inner), proto_ver=2).hex(),
+            "frames": frames_desc((5, interact_json.encode()), (5, unknown_json.encode())),
+            "expectError": False,
+        },
+        "brotliNested": {
+            "hex": build_packet(5, brotli.compress(brotli_inner), proto_ver=3).hex(),
+            "frames": frames_desc((5, interact_json.encode()), (3, popularity)),
+            "expectError": False,
+        },
+        # 坏帧跳过、剩余缓冲照常解出（分析报告解包缺陷修正）
+        "corruptZlibKeepsRemainder": {
+            "hex": (build_packet(5, b"not-zlib", proto_ver=2) + build_packet(3, popularity)).hex(),
+            "frames": frames_desc((3, popularity)),
+            "expectError": True,
+        },
+        "truncatedHeader": {
+            "hex": build_packet(5, danmu_json.encode())[:8].hex(),
+            "frames": [],
+            "expectError": True,
+        },
+        "invalidPacketLength": {
+            "hex": (struct.pack("!IHHII", 999, 16, 1, 5, 1) + b"{}").hex(),
+            "frames": [],
+            "expectError": True,
+        },
+    }
+
     output = {
         "_comment": "由 generate_vectors.py 从 .refs/source-refs 参照源执行生成，勿手改。",
         "appSign": app_sign,
         "mixinKey": mixin_key,
         "wbi": wbi,
+        "packets": {"encode": packet_encode, "decode": packet_decode},
     }
     out_path = Path(__file__).with_name("vectors.json")
     out_path.write_text(
