@@ -4,6 +4,16 @@
     <ProjectReference Include="..\BiliLiveTool.Core\BiliLiveTool.Core.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <PackageReference Include="Google.Protobuf" />
+    <PackageReference Include="Grpc.Tools" PrivateAssets="all" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- dm.proto 编译为 InteractWordV2（Grpc.Tools 仅生成消息类，不引入 gRPC 运行时） -->
+    <Protobuf Include="Danmu\dm.proto" GrpcServices="None" />
+  </ItemGroup>
+
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
