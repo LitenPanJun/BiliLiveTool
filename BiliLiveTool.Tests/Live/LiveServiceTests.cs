@@ -4,6 +4,7 @@ using BiliLiveTool.Core.Bilibili;
 using BiliLiveTool.Core.Security;
 using BiliLiveTool.Core.State;
 using BiliLiveTool.Infrastructure.Bilibili;
+using BiliLiveTool.Services;
 using BiliLiveTool.Services.Auth;
 using BiliLiveTool.Services.Live;
 using BiliLiveTool.Tests.Fakes;
