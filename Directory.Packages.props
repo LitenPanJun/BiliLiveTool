@@ -8,6 +8,19 @@
     <PackageVersion Include="Grpc.Tools" Version="2.84.0" />
     <!-- 服务层日志抽象 -->
     <PackageVersion Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.12" />
+    <!-- 桌面壳（Avalonia 11.3 LTS 线，选 11.x 而非 12.x：避开 12 的剪贴板/对话框破坏性变更） -->
+    <PackageVersion Include="Avalonia" Version="11.3.22" />
+    <PackageVersion Include="Avalonia.Desktop" Version="11.3.22" />
+    <PackageVersion Include="Avalonia.Themes.Fluent" Version="11.3.22" />
+    <PackageVersion Include="Avalonia.Fonts.Inter" Version="11.3.22" />
+    <PackageVersion Include="Avalonia.Diagnostics" Version="11.3.22" />
+    <!-- MVVM 与组合根（指南关键决策 5/7） -->
+    <PackageVersion Include="CommunityToolkit.Mvvm" Version="8.4.2" />
+    <PackageVersion Include="Microsoft.Extensions.DependencyInjection" Version="10.0.12" />
+    <PackageVersion Include="Microsoft.Extensions.Http" Version="10.0.12" />
+    <PackageVersion Include="Microsoft.Extensions.Logging" Version="10.0.12" />
+    <!-- 扫码登录二维码渲染 -->
+    <PackageVersion Include="QRCoder" Version="1.8.0" />
   </ItemGroup>
   <ItemGroup>
     <!-- 测试栈 -->
