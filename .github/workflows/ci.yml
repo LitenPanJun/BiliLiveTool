@@ -1,0 +1,44 @@
+# 指南步骤 4：CI 在 win-x64/linux-x64 全绿并产出自包含发布包。
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  build-test-publish:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            rid: win-x64
+          - os: ubuntu-latest
+            rid: linux-x64
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: 构建
+        run: dotnet build --configuration Release
+
+      - name: 测试
+        run: dotnet test --configuration Release --no-build
+
+      - name: 自包含发布
+        run: >-
+          dotnet publish BiliLiveTool.App/BiliLiveTool.App.csproj
+          --configuration Release
+          --runtime ${{ matrix.rid }}
+          --self-contained true
+          --output publish/${{ matrix.rid }}
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: BiliLiveTool-${{ matrix.rid }}
+          path: publish/${{ matrix.rid }}
