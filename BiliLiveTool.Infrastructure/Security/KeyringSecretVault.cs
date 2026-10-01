@@ -32,9 +32,20 @@ internal sealed class KeyringSecretVault : ISecretVault
 
     private static ILatchkey? CreateStore()
     {
+        // 有会话总线但无 Secret Service 时 libsecret 会阻塞至 D-Bus 超时
+        // （约 25s）：限时 3s 获取，拿不到即降级，启动绝不卡死。
         try
         {
-            return LatchkeyFactory.Create(ServiceName);
+            var pending = Task.Run(() => LatchkeyFactory.Create(ServiceName));
+            if (pending.Wait(TimeSpan.FromSeconds(3)))
+                return pending.Result;
+
+            // 超时后迟到的故障须被观察，避免未观察异常
+            _ = pending.ContinueWith(
+                static t => _ = t.Exception,
+                TaskContinuationOptions.OnlyOnFaulted
+                    | TaskContinuationOptions.ExecuteSynchronously);
+            return null;
         }
         catch (Exception)
         {
