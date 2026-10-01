@@ -14,6 +14,21 @@ public sealed class KeyringSecretVaultTests
     private const string Uid = "42";
 
     [Fact]
+    public void Production_Construction_Never_Throws_And_Is_Bounded()
+    {
+        // 真实 LatchkeyFactory：有钥匙串的桌面、无 Secret Service 的 CI
+        // 容器均须构造成功；不可用即降级，不得抛给组合根，也不得让
+        // D-Bus 超时（约 25s）拖死启动——限时 3s 降级，留 10s 余量。
+        var started = System.Diagnostics.Stopwatch.StartNew();
+        var vault = new KeyringSecretVault();
+        started.Stop();
+
+        started.Elapsed.Should().BeLessThan(TimeSpan.FromSeconds(10));
+        if (!vault.Available)
+            vault.Load("absent-uid").Should().BeNull();
+    }
+
+    [Fact]
     public void Save_Load_Returns_Same_Instances_Within_Session()
     {
         var vault = new KeyringSecretVault(new FakeLatchkey());
