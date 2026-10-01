@@ -11,8 +11,44 @@ using QRCoder;
 
 namespace BiliLiveTool.UI.ViewModels;
 
-/// <summary>账号列表行（头像不加载网络图，机密与 uid 一律掩码展示）。</summary>
-public sealed record AccountItem(string Uid, string MaskedUid, string Uname, string RoomId, bool IsCurrent);
+/// <summary>
+/// 账号列表行：命令随行携带（避免视图 $parent 回溯主 VM），
+/// 头像不加载网络图，机密与 uid 一律掩码展示。
+/// </summary>
+public sealed class AccountItem
+{
+    public AccountItem(
+        string uid,
+        string maskedUid,
+        string uname,
+        string roomId,
+        bool isCurrent,
+        IAsyncRelayCommand<string?> switchCommand,
+        IAsyncRelayCommand<string?> logoutCommand)
+    {
+        Uid = uid;
+        MaskedUid = maskedUid;
+        Uname = uname;
+        RoomId = roomId;
+        IsCurrent = isCurrent;
+        SwitchCommand = switchCommand;
+        LogoutCommand = logoutCommand;
+    }
+
+    public string Uid { get; }
+
+    public string MaskedUid { get; }
+
+    public string Uname { get; }
+
+    public string RoomId { get; }
+
+    public bool IsCurrent { get; }
+
+    public IAsyncRelayCommand<string?> SwitchCommand { get; }
+
+    public IAsyncRelayCommand<string?> LogoutCommand { get; }
+}
 
 /// <summary>
 /// 账号页：扫码登录（1500ms 轮询节奏在此驱动，对照原 QrCodeLogin 的
@@ -74,7 +110,9 @@ public sealed partial class AccountViewModel : ObservableObject
                 _masker.MaskString(account.Uid, 2, 2),
                 account.Uname,
                 account.RoomId,
-                account.Uid == currentUid));
+                account.Uid == currentUid,
+                SwitchAccountCommand,
+                LogoutCommand));
         }
 
         // 未登录时二维码面板常驻；已登录默认收起
