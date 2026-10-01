@@ -1,0 +1,11 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="BiliLiveTool.UI.Views.MainWindow"
+        Title="BiliLiveTool"
+        Width="980"
+        Height="640"
+        MinWidth="720"
+        MinHeight="480"
+        WindowStartupLocation="CenterScreen">
+    <TextBlock Text="BiliLiveTool" HorizontalAlignment="Center" VerticalAlignment="Center" />
+</Window>
