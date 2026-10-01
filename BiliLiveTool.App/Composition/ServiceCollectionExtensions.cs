@@ -24,11 +24,13 @@ internal static class ServiceCollectionExtensions
 {
     public static IServiceCollection AddBiliLiveTool(this IServiceCollection services)
     {
-        // 安全基线：日志唯一出口 + 机密/账号存储（P1 进程内实现，P2 落盘随后替换）
+        // 安全基线：日志唯一出口 + 机密/账号存储（config.json 仅非密钥，
+        // 机密后端随后提交切换为系统钥匙串）
         services.AddSingleton<ISecretMasker, SecretMasker>();
-        services.AddSingleton<IAccountStore, InMemoryAccountStore>();
+        services.AddSingleton<FileConfigStore>();
+        services.AddSingleton<IAccountStore>(sp => sp.GetRequiredService<FileConfigStore>());
+        services.AddSingleton<IAppConfigStore>(sp => sp.GetRequiredService<FileConfigStore>());
         services.AddSingleton<ISecretVault, InMemorySecretVault>();
-        services.AddSingleton<IAppConfigStore, InMemoryAppConfigStore>();
 
         // 日志：唯一提供者为 UiLogSink（写入即脱敏），最低级别 Debug
         // 以保未知弹幕 cmd 的 debug 记录可见
