@@ -1,3 +1,4 @@
+using System.Reflection;
 using BiliLiveTool.Core.Auth;
 using BiliLiveTool.Services.Auth;
 using BiliLiveTool.Services.User;
@@ -44,9 +45,16 @@ public sealed partial class MainViewModel : ObservableObject
     [ObservableProperty]
     private string _statusText = "就绪";
 
-    /// <summary>版本号（对照原 get_version，单源于 Directory.Build.props）。</summary>
-    public string VersionText { get; } = "v" +
-        (typeof(MainViewModel).Assembly.GetName().Version?.ToString(3) ?? "0.0.0");
+    /// <summary>
+    /// 版本号（对照原 get_version）：按指南经 AssemblyInformationalVersion
+    /// 单源于 Directory.Build.props，剥掉 SourceLink 的 +sha 后缀。
+    /// </summary>
+    public string VersionText { get; } = "v" + (
+        typeof(MainViewModel).Assembly
+            .GetCustomAttribute<AssemblyInformationalVersionAttribute>()
+            ?.InformationalVersion?.Split('+')[0]
+        ?? typeof(MainViewModel).Assembly.GetName().Version?.ToString(3)
+        ?? "0.0.0");
 
     public MainViewModel(
         UserService user,
