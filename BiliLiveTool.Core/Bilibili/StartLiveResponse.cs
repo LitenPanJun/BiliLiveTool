@@ -8,12 +8,12 @@ namespace BiliLiveTool.Core.Bilibili;
 /// </summary>
 public sealed record StartLiveResponse(JsonObject? Rtmp, JsonArray Protocols, string? Qr)
 {
-    public static StartLiveResponse Parse(JsonObject? data)
+    public static StartLiveResponse Parse(JsonNode? data)
     {
-        if (data is null) return new(null, [], null);
+        if (data is not JsonObject obj) return new(null, [], null);
         return new(
-            data["rtmp"] as JsonObject,
-            data["protocols"] as JsonArray ?? [],
-            data["qr"] is JsonValue qr && qr.TryGetValue<string>(out var qrText) ? qrText : null);
+            obj["rtmp"] as JsonObject,
+            obj["protocols"] as JsonArray ?? [],
+            obj["qr"] is JsonValue qr && qr.TryGetValue<string>(out var qrText) ? qrText : null);
     }
 }

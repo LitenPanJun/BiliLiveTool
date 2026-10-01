@@ -379,7 +379,7 @@ public sealed class BilibiliApiClient : IBilibiliApiClient
             else if (root["message"] is JsonValue messageValue && messageValue.TryGetValue<string>(out var parsedMessage))
                 message = parsedMessage;
 
-            var data = (root["data"] as JsonObject)?.DeepClone() as JsonObject;
+            var data = root["data"]?.DeepClone();
 
             IReadOnlyDictionary<string, string>? cookies = null;
             if (captureCookies && response.Headers.TryGetValues("Set-Cookie", out var setCookies))

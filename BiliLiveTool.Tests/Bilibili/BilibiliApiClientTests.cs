@@ -1,5 +1,6 @@
 using System.Net;
 using System.Text;
+using System.Text.Json.Nodes;
 using BiliLiveTool.Core.Security;
 using BiliLiveTool.Infrastructure.Bilibili;
 using FluentAssertions;
@@ -304,6 +305,21 @@ public class BilibiliApiClientTests
         result.Success.Should().BeFalse();
         result.Code.Should().Be(-1);
         result.Message.Should().Be("API 返回格式错误");
+    }
+
+    [Fact]
+    public async Task Array_Data_Is_Preserved_As_JsonArray()
+    {
+        // 回归：Area/getList 的 data 为数组，须原样保留（对照原 res['data'] 任意形状）
+        var (client, handler) = Create();
+        handler.Responder = _ => StubHandler.Json(
+            """{"code":0,"message":"0","data":[{"id":235,"name":"A-SOUL"}]}""");
+
+        var result = await client.GetAreaListAsync(CancellationToken.None);
+
+        result.Success.Should().BeTrue();
+        result.Data.Should().BeOfType<JsonArray>();
+        result.Data![0]!["id"]!.GetValue<int>().Should().Be(235);
     }
 
     // --- buvid3 ---
