@@ -8,6 +8,7 @@ namespace BiliLiveTool.Core.Auth;
 /// </summary>
 public sealed record AccountRecord
 {
+    [JsonPropertyName("uid")]
     public required string Uid { get; init; }
 
     [JsonPropertyName("uname")]

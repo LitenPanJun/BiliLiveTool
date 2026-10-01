@@ -15,6 +15,9 @@ public interface IAccountStore
     /// <summary>写入账号并置为当前（对照 save_user_data）。</summary>
     void Save(AccountRecord account);
 
+    /// <summary>仅更新账号，不改变当前指针（对照 _save_current_user_fields）。</summary>
+    void Upsert(AccountRecord account);
+
     /// <summary>切换当前账号（对照 switch_account 的 current_uid 赋值）。</summary>
     void SetCurrent(string? uid);
 
