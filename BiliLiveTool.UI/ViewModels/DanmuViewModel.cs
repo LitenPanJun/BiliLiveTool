@@ -61,9 +61,17 @@ public sealed partial class DanmuViewModel : ObservableObject
             return;
         }
 
-        var ok = await _danmu.ConnectAsync(roomId, CancellationToken.None).ConfigureAwait(true);
-        IsMonitoring = ok;
-        StatusText = ok ? "弹幕已连接" : "弹幕连接失败，可重试";
+        try
+        {
+            var ok = await _danmu.ConnectAsync(roomId, CancellationToken.None).ConfigureAwait(true);
+            IsMonitoring = ok;
+            StatusText = ok ? "弹幕已连接" : "弹幕连接失败，可重试";
+        }
+        catch (Exception)
+        {
+            IsMonitoring = false;
+            StatusText = "弹幕连接异常，可重试";
+        }
     }
 
     /// <summary>会话切换/登出后由主窗调用：服务端已停旧连接，同步 UI 态。</summary>
@@ -79,9 +87,16 @@ public sealed partial class DanmuViewModel : ObservableObject
     [RelayCommand]
     private async Task StopMonitorAsync()
     {
-        await _danmu.StopAsync(CancellationToken.None).ConfigureAwait(true);
-        IsMonitoring = false;
-        StatusText = "弹幕已停止";
+        try
+        {
+            await _danmu.StopAsync(CancellationToken.None).ConfigureAwait(true);
+            IsMonitoring = false;
+            StatusText = "弹幕已停止";
+        }
+        catch (Exception e)
+        {
+            StatusText = $"停止失败：{e.Message}";
+        }
     }
 
     [RelayCommand]
@@ -91,17 +106,25 @@ public sealed partial class DanmuViewModel : ObservableObject
         if (text.Length == 0)
             return;
 
-        var res = await _danmu.SendDanmuAsync(text, CancellationToken.None).ConfigureAwait(true);
-        if (!res.IsSuccess)
+        try
         {
-            StatusText = res.Message.Length == 0 ? "发送失败" : res.Message;
-            // 对照指南示例：失败也清空草稿
-            Draft = "";
-            return;
-        }
+            var res = await _danmu.SendDanmuAsync(text, CancellationToken.None).ConfigureAwait(true);
+            if (!res.IsSuccess)
+            {
+                StatusText = res.Message.Length == 0 ? "发送失败" : res.Message;
+                // 对照指南示例：失败也清空草稿
+                Draft = "";
+                return;
+            }
 
-        Draft = "";
-        StatusText = "";
+            Draft = "";
+            StatusText = "";
+        }
+        catch (Exception e)
+        {
+            Draft = "";
+            StatusText = $"发送异常：{e.Message}";
+        }
     }
 
     private void Drain()
