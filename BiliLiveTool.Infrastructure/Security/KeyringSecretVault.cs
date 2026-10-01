@@ -23,14 +23,22 @@ internal sealed class KeyringSecretVault : ISecretVault
     private readonly ILatchkey? _store;
 
     public KeyringSecretVault()
+        : this(CreateStore())
+    {
+    }
+
+    /// <summary>测试注入口：指定钥匙串后端（null 模拟不可用降级）。</summary>
+    internal KeyringSecretVault(ILatchkey? store) => _store = store;
+
+    private static ILatchkey? CreateStore()
     {
         try
         {
-            _store = LatchkeyFactory.Create(ServiceName);
+            return LatchkeyFactory.Create(ServiceName);
         }
         catch (Exception)
         {
-            _store = null; // 解析不到系统钥匙串：会话内存降级
+            return null; // 解析不到系统钥匙串（无会话总线）：会话内存降级
         }
     }
 
