@@ -1,0 +1,82 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="clr-namespace:BiliLiveTool.UI.ViewModels"
+             x:Class="BiliLiveTool.UI.Views.DanmuView"
+             x:DataType="vm:DanmuViewModel">
+    <Grid Margin="16"
+          RowDefinitions="Auto,*,Auto"
+          RowSpacing="8">
+        <!-- 状态头 -->
+        <StackPanel Grid.Row="0" Spacing="4">
+            <DockPanel>
+                <StackPanel DockPanel.Dock="Left"
+                            Orientation="Horizontal"
+                            Spacing="8"
+                            VerticalAlignment="Center">
+                    <TextBlock Classes="section-title"
+                               VerticalAlignment="Center"
+                               Text="弹幕监控" />
+                    <Border Padding="8,2"
+                            CornerRadius="4"
+                            Background="#2E7D32"
+                            IsVisible="{Binding IsMonitoring}">
+                        <TextBlock FontSize="12"
+                                   Foreground="White"
+                                   Text="监听中" />
+                    </Border>
+                    <Border Padding="8,2"
+                            CornerRadius="4"
+                            Background="#757575"
+                            IsVisible="{Binding IsStopped}">
+                        <TextBlock FontSize="12"
+                                   Foreground="White"
+                                   Text="未连接" />
+                    </Border>
+                </StackPanel>
+                <StackPanel Orientation="Horizontal"
+                            HorizontalAlignment="Right"
+                            Spacing="8">
+                    <Button Content="连接"
+                            Command="{Binding StartMonitorCommand}" />
+                    <Button Content="断开"
+                            Command="{Binding StopMonitorCommand}" />
+                </StackPanel>
+            </DockPanel>
+            <TextBlock Classes="status" Text="{Binding StatusText}" />
+        </StackPanel>
+
+        <!-- 消息列表：虚拟化，配合 200 条上限 -->
+        <Border Grid.Row="1"
+                Classes="dialog-card"
+                Padding="8">
+            <ListBox ItemsSource="{Binding Messages}"
+                     Background="Transparent">
+                <ListBox.ItemTemplate>
+                    <DataTemplate x:DataType="vm:DanmuItem">
+                        <StackPanel Orientation="Horizontal"
+                                    Spacing="10">
+                            <TextBlock Classes="status"
+                                       Width="64"
+                                       Text="{Binding Time}" />
+                            <TextBlock TextWrapping="Wrap"
+                                       Text="{Binding Display}" />
+                        </StackPanel>
+                    </DataTemplate>
+                </ListBox.ItemTemplate>
+            </ListBox>
+        </Border>
+
+        <!-- 发送栏 -->
+        <DockPanel Grid.Row="2">
+            <Button DockPanel.Dock="Right"
+                    Classes="primary"
+                    Margin="8,0,0,0"
+                    Content="发送"
+                    Command="{Binding SendCommand}" />
+            <TextBox Classes="input"
+                     Watermark="发送弹幕…"
+                     KeyDown="OnSendKeyDown"
+                     Text="{Binding Draft}" />
+        </DockPanel>
+    </Grid>
+</UserControl>

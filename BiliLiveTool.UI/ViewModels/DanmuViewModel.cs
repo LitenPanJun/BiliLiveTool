@@ -36,6 +36,11 @@ public sealed partial class DanmuViewModel : ObservableObject
     [ObservableProperty]
     private string _statusText = "弹幕未连接";
 
+    /// <summary>未监听徽标绑定。</summary>
+    public bool IsStopped => !IsMonitoring;
+
+    partial void OnIsMonitoringChanged(bool value) => OnPropertyChanged(nameof(IsStopped));
+
     public DanmuViewModel(DanmuService danmu, AuthSessionStore sessions)
     {
         _danmu = danmu;
