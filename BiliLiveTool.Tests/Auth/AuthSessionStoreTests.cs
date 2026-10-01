@@ -51,4 +51,45 @@ public class AuthSessionStoreTests
         snapshot.BiliJct.Should().BeSameAs(jct);
         snapshot.BiliJct!.ToString().Should().Be("***");
     }
+
+    [Fact]
+    public void Csrf_Is_Derived_From_BiliJct_Not_A_Separate_Copy()
+    {
+        using var jct = new SecureCredential("jct-secret");
+        var snapshot = new SessionSnapshot { BiliJct = jct };
+
+        snapshot.Csrf.Should().BeSameAs(jct);
+        new SessionSnapshot().Csrf.Should().BeNull();
+    }
+
+    [Fact]
+    public void ResolveAreaId_Looks_Up_Partition_Map()
+    {
+        var store = new AuthSessionStore();
+        store.SetPartitions(new Dictionary<string, IReadOnlyDictionary<string, int>>
+        {
+            ["宅系"] = new Dictionary<string, int> { ["A-SOUL"] = 235, ["虚拟主播"] = 3259 },
+            ["知识"] = new Dictionary<string, int> { ["科学"] = 204 },
+        });
+
+        store.ResolveAreaId("宅系", "A-SOUL").Should().Be(235);
+        store.ResolveAreaId("知识", "科学").Should().Be(204);
+        store.ResolveAreaId("知识", "不存在").Should().BeNull();
+        store.ResolveAreaId("不存在", "科学").Should().BeNull();
+    }
+
+    [Fact]
+    public void SetPartitions_Replaces_Map_Wholesale()
+    {
+        var store = new AuthSessionStore();
+        store.SetPartitions(new Dictionary<string, IReadOnlyDictionary<string, int>>
+        {
+            ["旧"] = new Dictionary<string, int> { ["区"] = 1 },
+        });
+
+        store.SetPartitions(new Dictionary<string, IReadOnlyDictionary<string, int>>());
+
+        store.Partitions.Should().BeEmpty();
+        store.ResolveAreaId("旧", "区").Should().BeNull();
+    }
 }
