@@ -25,6 +25,7 @@
     <ProjectReference Include="..\BiliLiveTool.Core\BiliLiveTool.Core.csproj" />
     <ProjectReference Include="..\BiliLiveTool.Infrastructure\BiliLiveTool.Infrastructure.csproj" />
     <ProjectReference Include="..\BiliLiveTool.Services\BiliLiveTool.Services.csproj" />
+    <ProjectReference Include="..\BiliLiveTool.UI\BiliLiveTool.UI.csproj" />
   </ItemGroup>
 
 </Project>
