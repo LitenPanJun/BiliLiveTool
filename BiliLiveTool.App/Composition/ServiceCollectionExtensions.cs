@@ -1,6 +1,7 @@
 using BiliLiveTool.Core.Auth;
 using BiliLiveTool.Core.Bilibili;
 using BiliLiveTool.Core.Config;
+using BiliLiveTool.Core.Danmu;
 using BiliLiveTool.Core.Security;
 using BiliLiveTool.Infrastructure.Bilibili;
 using BiliLiveTool.Infrastructure.Security;
@@ -47,6 +48,7 @@ internal static class ServiceCollectionExtensions
         services.AddSingleton<LiveService>();
         services.AddSingleton<AuthService>();
         services.AddSingleton<DanmuService>();
+        services.AddSingleton<IDanmuMonitor>(sp => sp.GetRequiredService<DanmuService>());
 
         // UI：DialogHost 以具体类型供窗口绑定，接口供子 VM 注入
         services.AddSingleton<DialogHost>();
