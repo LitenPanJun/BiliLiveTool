@@ -38,29 +38,45 @@ public partial class App : Application
     {
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
-            _provider = new ServiceCollection()
-                .AddBiliLiveTool()
-                .BuildServiceProvider();
-
-            WarnIfKeyringUnavailable();
-
-            var main = _provider.GetRequiredService<MainViewModel>();
-            _window = new MainWindow { DataContext = main };
-            desktop.MainWindow = _window;
-
-            _window.Opened += (_, _) => OnOpenedAsync(_window, main);
-            _window.Closing += (_, e) =>
+            try
             {
-                // 对照原 window_close：min_to_tray 时隐藏而非退出
-                if (!_exiting && _provider?.GetRequiredService<IAppConfigStore>().MinToTray == true)
-                {
-                    e.Cancel = true;
-                    _window.Hide();
-                }
-            };
-            desktop.Exit += (_, _) => OnExit();
+                _provider = new ServiceCollection()
+                    .AddBiliLiveTool()
+                    .BuildServiceProvider(new ServiceProviderOptions
+                    {
+                        // 启动即校验依赖图：漏注册在装配期报错，
+                        // 而非运行中以未处理异常（exit 134）裸崩
+                        ValidateOnBuild = true,
+                        ValidateScopes = true,
+                    });
 
-            SetupTray();
+                WarnIfKeyringUnavailable();
+
+                var main = _provider.GetRequiredService<MainViewModel>();
+                _window = new MainWindow { DataContext = main };
+                desktop.MainWindow = _window;
+
+                _window.Opened += (_, _) => OnOpenedAsync(_window, main);
+                _window.Closing += (_, e) =>
+                {
+                    // 对照原 window_close：min_to_tray 时隐藏而非退出
+                    if (!_exiting && _provider?.GetRequiredService<IAppConfigStore>().MinToTray == true)
+                    {
+                        e.Cancel = true;
+                        _window.Hide();
+                    }
+                };
+                desktop.Exit += (_, _) => OnExit();
+
+                SetupTray();
+            }
+            catch (Exception e)
+            {
+                // 装配失败不许以未处理异常收场：报日志后受控退出（码 1）
+                Console.Error.WriteLine($"BiliLiveTool startup failed: {e}");
+                _provider?.GetService<ILogger<App>>()?.LogError(e, "Startup failed");
+                desktop.Shutdown(1);
+            }
         }
 
         base.OnFrameworkInitializationCompleted();
