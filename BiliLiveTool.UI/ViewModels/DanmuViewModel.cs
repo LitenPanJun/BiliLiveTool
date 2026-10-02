@@ -8,8 +8,16 @@ using CommunityToolkit.Mvvm.Input;
 
 namespace BiliLiveTool.UI.ViewModels;
 
-/// <summary>弹幕列表行（时间 + 渲染完成的文本）。</summary>
-public sealed record DanmuItem(string Time, string Display);
+/// <summary>
+/// 弹幕列表行：时间 + 纯文本回退（复制/检索用）+ 行内片段（有表情时启用）。
+/// </summary>
+public sealed record DanmuItem(string Time, string Display)
+{
+    /// <summary>行内片段（文本/表情交替）；无表情时为 null 走纯文本模板。</summary>
+    public IReadOnlyList<DanmuSegment>? Parts { get; init; }
+
+    public bool HasParts => Parts is { Count: > 0 };
+}
 
 /// <summary>
 /// 弹幕页：经 DanmuService.Events 的 ChannelReader 以 100ms 节拍批量渲染，
@@ -137,7 +145,9 @@ public sealed partial class DanmuViewModel : ObservableObject
         var added = 0;
         while (added < BatchSize && _danmu.Events.TryRead(out var evt))
         {
-            Messages.Add(new DanmuItem(DateTime.Now.ToString("HH:mm:ss"), Format(evt)));
+            var (display, parts) = Format(evt);
+            Messages.Add(
+                new DanmuItem(DateTime.Now.ToString("HH:mm:ss"), display) { Parts = parts });
             added++;
         }
 
@@ -148,13 +158,20 @@ public sealed partial class DanmuViewModel : ObservableObject
             Messages.RemoveAt(0);
     }
 
-    private static string Format(DanmuEvent evt) => evt.Type switch
+    private static (string Display, IReadOnlyList<DanmuSegment>? Parts) Format(DanmuEvent evt)
     {
-        DanmuEventTypes.Danmu => $"{evt.Uname}: {evt.Msg}",
-        DanmuEventTypes.Interact => evt.Uname.Length == 0 ? evt.Msg : $"{evt.Uname} {evt.Msg}",
-        DanmuEventTypes.Gift => evt.Msg.Length > 0
-            ? $"{evt.Uname} {evt.Msg}"
-            : $"{evt.Uname} {evt.Action} {evt.GiftName} x{evt.Num}",
-        _ => evt.Msg, // system：连接成功/熔断等直出
-    };
+        var display = evt.Type switch
+        {
+            DanmuEventTypes.Danmu => $"{evt.Uname}: {evt.Msg}",
+            DanmuEventTypes.Interact => evt.Uname.Length == 0 ? evt.Msg : $"{evt.Uname} {evt.Msg}",
+            DanmuEventTypes.Gift => evt.Msg.Length > 0
+                ? $"{evt.Uname} {evt.Msg}"
+                : $"{evt.Uname} {evt.Action} {evt.GiftName} x{evt.Num}",
+            _ => evt.Msg, // system：连接成功/熔断等直出
+        };
+        var parts = evt.Type == DanmuEventTypes.Danmu
+            ? DanmuSegment.Build(evt.Msg, evt.Emotes)
+            : null;
+        return (display, parts);
+    }
 }
