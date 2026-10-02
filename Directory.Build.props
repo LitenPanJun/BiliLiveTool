@@ -1,7 +1,19 @@
 <Project>
   <PropertyGroup>
-    <!-- 版本号单源（替代原 VERSION/pyproject 双源，指南步骤 4） -->
-    <Version>0.1.0</Version>
+    <!-- 版本单源：根目录 VERSION 一行即全局生效（所有 exe/dll 的 Assembly/File/Product/
+         Informational 版本同步，见 AGENTS.md「版本管理」）。格式 major.minor.patch.yymmdd。 -->
+    <VersionLabel>$([System.IO.File]::ReadAllText('$(MSBuildThisFileDirectory)VERSION').Trim())</VersionLabel>
+    <Version>$(VersionLabel)</Version>
+    <!-- Assembly/FileVersion 每段为 16 位（≤65535），yymmdd 修订段超限：
+         截去第 4 段后补 0（如 0.2.0.261002 → 0.2.0.0），完整版本见 InformationalVersion。 -->
+    <_VersionCore>$([System.Text.RegularExpressions.Regex]::Replace($(VersionLabel), '\.\d+$', ''))</_VersionCore>
+    <AssemblyVersion>$(_VersionCore).0</AssemblyVersion>
+    <FileVersion>$(_VersionCore).0</FileVersion>
+    <!-- 程序集详细信息（文件属性/FileVersionInfo 可见） -->
+    <Product>BiliLiveTool</Product>
+    <Company>BiliLiveTool</Company>
+    <Copyright>Copyright © 2026 BiliLiveTool contributors</Copyright>
+    <Description>B站直播桌面工具：登录、开播、获取推流码、收发弹幕和礼物信息</Description>
     <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
