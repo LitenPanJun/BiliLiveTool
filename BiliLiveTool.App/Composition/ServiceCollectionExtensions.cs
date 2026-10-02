@@ -20,7 +20,7 @@ namespace BiliLiveTool.App.Composition;
 
 /// <summary>
 /// 应用组合根：全部服务经构造函数注入装配（指南步骤示例的 AddSingleton /
-/// AddHttpClient 形态），日志仅汇入掩码后的 UI 控制台。
+/// AddHttpClient 形态），日志汇入掩码后的 UI 控制台并落盘 logs/app.log。
 /// </summary>
 internal static class ServiceCollectionExtensions
 {

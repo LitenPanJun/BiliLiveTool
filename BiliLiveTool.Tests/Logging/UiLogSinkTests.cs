@@ -7,7 +7,8 @@ namespace BiliLiveTool.Tests.Logging;
 
 /// <summary>
 /// UI 日志唯一出口：写入即脱敏（JSON 走 MaskData、其余走 MaskUrl 兜底），
-/// 有界 500 DropOldest，读取侧永不见原文（指南验证清单安全条）。
+/// 有界 500 DropOldest，读取侧永不见原文（指南验证清单安全条）；
+/// 落盘行为见 UiLogSinkFileTests。
 /// </summary>
 public sealed class UiLogSinkTests
 {
@@ -55,7 +56,7 @@ public sealed class UiLogSinkTests
     [Fact]
     public void Sink_Writes_Masked_Entries_With_Category()
     {
-        using var sink = new UiLogSink(_masker);
+        using var sink = new UiLogSink(_masker, null);
         var logger = sink.CreateLogger("Test.Category");
 
         logger.LogWarning(
@@ -72,7 +73,7 @@ public sealed class UiLogSinkTests
     [Fact]
     public void Sink_Bounded_Drops_Oldest_At_500()
     {
-        using var sink = new UiLogSink(_masker);
+        using var sink = new UiLogSink(_masker, null);
         var logger = sink.CreateLogger("Cap");
 
         for (var i = 0; i < 600; i++)
@@ -90,7 +91,7 @@ public sealed class UiLogSinkTests
     [Fact]
     public void Sink_After_Dispose_Rejects_New_Entries()
     {
-        var sink = new UiLogSink(_masker);
+        var sink = new UiLogSink(_masker, null);
         sink.Dispose();
 
         sink.CreateLogger("X").LogInformation("after-dispose");
