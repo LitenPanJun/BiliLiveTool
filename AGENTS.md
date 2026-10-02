@@ -41,7 +41,8 @@ Solution `BiliLiveTool`，5 工程，`net10.0`，命名空间与目录一一对�
 
 ## 构建与验证
 
-- `Directory.Build.props` 必须开启 `Nullable=enable`、`TreatWarningsAsErrors=true`、`EnforceCodeStyleInBuild=true`；版本号单源于此（替代原 `VERSION`/`pyproject` 双源）。
+- `Directory.Build.props` 必须开启 `Nullable=enable`、`TreatWarningsAsErrors=true`、`EnforceCodeStyleInBuild=true`。
+- **版本管理（一次性全局修改）**：版本唯一来源是根目录 `VERSION`（格式 `major.minor.patch.yymmdd`，如 `0.2.0.261002` 对应 2026-10-02 的提交）；`Directory.Build.props` 读取它并派生 `Version` / `AssemblyVersion` / `FileVersion` / `Product` / `Company` / `Copyright` / `Description`。升版**只改 `VERSION` 一行**（与对应提交同笔提交），全部输出 exe/dll 的文件属性与 `FileVersionInfo` 详情自动同步；完整版本（可含 `+git sha`）见 `InformationalVersion`（即文件属性的 Product version）。注意程序集版本每段 16 位（≤65535），超限的 yymmdd 段由 props 截去、派生 `x.y.z.0`；`BiliLiveTool.Tests/Build/VersionTests` 封死格式违约与各工程版本漂移。
 - 依赖统一在 `Directory.Packages.props` 钉版（`Google.Protobuf` / `Avalonia` / `CommunityToolkit.Mvvm` / `Microsoft.Extensions.*`）。
 - 测试框架 xUnit（+ FluentAssertions）。命令：`dotnet build`、`dotnet test`；单个测试用 `dotnet test --filter "FullyQualifiedName~<名字>"`。
 - 必测纯逻辑：`WbiSigner` / `AppSigner` / `DanmuPacketCodec` / `SecretMasker` 行覆盖率 ≥ 90%，用录制样本做金丝雀断言（与 Python 输出逐字节一致）。
@@ -70,6 +71,7 @@ Solution `BiliLiveTool`，5 工程，`net10.0`，命名空间与目录一一对�
 
 ## Git 提交约定
 
+- **未经用户明确允许，禁止 `git push`**（含任何远端、含 `--force`）：提交只落本地，推送必须由用户明确指示后才执行。
 - 颗粒度：**line > file > feat** —— 尽量小步提交，一次提交聚焦单点改动/单个文件，避免大块 feature 提交。
 - 摘要行：以**标准英文类型前缀**开头（Conventional Commits：`feat` / `fix` / `docs` / `chore` / `refactor` / `test` / `perf` / `build` / `ci`），可用时在类型后加 `(...)` 括号注解范围，如 `docs(README): ...`。
 - 摘要其余部分与正文说明**用中文**：祈使句、首行 ≤ 72 字符、正文解释"为什么"。
