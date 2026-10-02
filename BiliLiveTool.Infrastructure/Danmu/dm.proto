@@ -104,3 +104,21 @@ message InteractWordV2 {
     }
     UserInfo uinfo = 22;
 }
+
+// SEND_GIFT_V2 的 data.pb 载荷（字段号取自 B站网页端 bundle 内
+// protobuf.js 生成的 bilibili.live.gift.v1.SendGiftBroadcast 描述，
+// 与 2026-10-02 实抓样本逐字段核对一致；未用字段不声明，未知字段自动跳过）。
+message SendGiftV2 {
+    uint64 uid = 1;
+    string uname = 2;
+    string face = 3;
+
+    message GiftItem {
+        uint64 gift_id = 1;
+        string gift_name = 2;
+        uint64 num = 3; // 本条事件的礼物数量
+        string action = 18; // “投喂”等
+    }
+
+    repeated GiftItem gift_list = 10;
+}
