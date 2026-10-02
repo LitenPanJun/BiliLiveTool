@@ -4,12 +4,6 @@
 
 B站直播伴侣桌面工具：扫码登录与多账号管理、分区/标题/公告修改、开播取推流码（RTMP/SRT，含人脸验证分支）、弹幕收发监控。
 
-## 项目状态
-
-重构已完成：P0（安全与骨架）→ P1（服务与弹幕核心）→ P2（界面与发布）三阶段全部落地，5 工程可构建、全量单测绿；GitHub Actions 在 `win-x64`/`linux-x64` 上构建、测试并产出自包含发布包。
-
-本 README 面向使用者与开发者；仓库另有一份面向辅助开发智能体的规则限定文件 [AGENTS.md](AGENTS.md)，人类贡献者以本文档为准。
-
 ## 功能特性
 
 - 扫码登录，多账号切换
@@ -82,7 +76,6 @@ dotnet publish BiliLiveTool.App/BiliLiveTool.App.csproj \
 ## 开发说明
 
 - **上游项目**：基于 [ChaceQC/bilibili_live_stream_code](https://github.com/ChaceQC/bilibili_live_stream_code) 重构，B站 API 语义与上游保持一致，不新增接口、不改字段映射。
-- **AI 规则文件**：[AGENTS.md](AGENTS.md) 是面向辅助开发智能体的规则限定，不构成对人类贡献者的要求；贡献规范以上文[贡献](#贡献)一节为准。
 
 ## 许可证
 
