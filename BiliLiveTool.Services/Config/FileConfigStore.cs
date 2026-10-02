@@ -413,7 +413,8 @@ public sealed class FileConfigStore : IAccountStore, IAppConfigStore
     private static string Normalize(string name) =>
         name.Replace("_", string.Empty, StringComparison.Ordinal).ToLowerInvariant();
 
-    private static string DefaultPath()
+    /// <summary>配置根目录：XDG_CONFIG_HOME 或 ~/.config 下的 BiliLiveTool（目录本身按 700 收紧）。</summary>
+    public static string ConfigDirectory()
     {
         var xdg = Environment.GetEnvironmentVariable("XDG_CONFIG_HOME");
         var baseDir = !string.IsNullOrEmpty(xdg)
@@ -421,6 +422,8 @@ public sealed class FileConfigStore : IAccountStore, IAppConfigStore
             : Path.Combine(
                 Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
                 ".config");
-        return Path.Combine(baseDir, "BiliLiveTool", FileName);
+        return Path.Combine(baseDir, "BiliLiveTool");
     }
+
+    private static string DefaultPath() => Path.Combine(ConfigDirectory(), FileName);
 }
