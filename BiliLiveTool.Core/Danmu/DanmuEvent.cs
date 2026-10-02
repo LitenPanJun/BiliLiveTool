@@ -1,5 +1,8 @@
 namespace BiliLiveTool.Core.Danmu;
 
+/// <summary>弹幕内嵌表情（token → 图片地址与尺寸，取自 info[0][15].extra.emots）。</summary>
+public sealed record DanmuEmote(string Url, int Width, int Height);
+
 /// <summary>弹幕事件，字段对照 danmu_service.py 六类回调载荷。</summary>
 public sealed record DanmuEvent(
     string Type,
@@ -9,7 +12,8 @@ public sealed record DanmuEvent(
     string Face = "",
     string GiftName = "",
     int Num = 0,
-    string Action = "");
+    string Action = "",
+    IReadOnlyDictionary<string, DanmuEmote>? Emotes = null);
 
 /// <summary>事件类型常量，对照原前端 type 字段取值。</summary>
 public static class DanmuEventTypes

@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Text;
+using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Threading.Channels;
 using BiliLiveTool.Core.Bilibili;
@@ -462,6 +463,11 @@ public sealed class DanmuService : IDanmuMonitor
                     JsonRead.ReadLong(data["uid"]) ?? 0),
                 gen);
         }
+        else if (cmd.StartsWith("SEND_GIFT_V2", StringComparison.Ordinal))
+        {
+            // B站已将礼物推送改为 protobuf 载荷（data.pb），须先于 SEND_GIFT 前缀分支匹配
+            HandleGiftV2(AsObject(command["data"]), gen);
+        }
         else if (cmd.StartsWith("SEND_GIFT", StringComparison.Ordinal))
         {
             var data = AsObject(command["data"]);
@@ -529,15 +535,91 @@ public sealed class DanmuService : IDanmuMonitor
             uname = JsonRead.ReadText(user[1]) ?? "";
         }
 
+        var meta = info[0] as JsonArray;
+
         // 头像 meta：info[0][15].user.base.face（对照原 try 取头像）
         var face = "";
-        if (info[0] is JsonArray meta && meta.Count > 15 && meta[15] is JsonObject extra
+        if (meta is { Count: > 15 } && meta[15] is JsonObject extra
             && extra["user"] is JsonObject userObj && userObj["base"] is JsonObject basis)
         {
             face = JsonRead.ReadText(basis["face"]) ?? "";
         }
 
-        Publish(new DanmuEvent(DanmuEventTypes.Danmu, msg, uid, uname, face), gen);
+        var emotes = ReadEmotes(meta, msg);
+
+        Publish(new DanmuEvent(DanmuEventTypes.Danmu, msg, uid, uname, face, Emotes: emotes), gen);
+    }
+
+    /// <summary>
+    /// 表情元数据（对照网页端 info[] 映射：dmType=t[0][12]、emoticonOptions=t[0][13]、
+    /// emots 取 info[0][15].extra.emots）：普通弹幕按 [token] 查表，单表情弹幕整条作 key。
+    /// </summary>
+    private static IReadOnlyDictionary<string, DanmuEmote>? ReadEmotes(JsonArray? meta, string msg)
+    {
+        if (meta is null || msg.Length == 0)
+            return null;
+
+        var dmType = meta.Count > 12 ? JsonRead.ReadInt(meta[12]) ?? 0 : 0;
+        if (dmType != 0)
+        {
+            var single = ParseJsonObject(meta.Count > 13 ? meta[13] : null);
+            if (single is null)
+                return null;
+            var url = JsonRead.ReadText(single["url"]) ?? "";
+            if (url.Length == 0)
+                return null;
+            return new Dictionary<string, DanmuEmote>(StringComparer.Ordinal)
+            {
+                [msg] = new DanmuEmote(
+                    url,
+                    JsonRead.ReadInt(single["width"]) ?? 0,
+                    JsonRead.ReadInt(single["height"]) ?? 0),
+            };
+        }
+
+        if (meta.Count <= 15 || meta[15] is not JsonObject meta15
+            || JsonRead.ReadText(meta15["extra"]) is not { Length: > 0 } extraJson
+            || ParseJsonObject(extraJson)?["emots"] is not JsonObject emots
+            || emots.Count == 0)
+        {
+            return null;
+        }
+
+        Dictionary<string, DanmuEmote>? map = null;
+        foreach (var (token, node) in emots)
+        {
+            if (node is not JsonObject emote)
+                continue;
+            var url = JsonRead.ReadText(emote["url"]) ?? "";
+            if (url.Length == 0)
+                continue;
+            map ??= new Dictionary<string, DanmuEmote>(StringComparer.Ordinal);
+            map[token] = new DanmuEmote(
+                url,
+                JsonRead.ReadInt(emote["width"]) ?? 0,
+                JsonRead.ReadInt(emote["height"]) ?? 0);
+        }
+
+        return map;
+    }
+
+    private static JsonObject? ParseJsonObject(JsonNode? node)
+    {
+        if (node is JsonObject obj)
+            return obj;
+        if (node is JsonValue val && val.TryGetValue<string>(out var text) && text.Length > 1)
+        {
+            try
+            {
+                return JsonNode.Parse(text) as JsonObject;
+            }
+            catch (JsonException)
+            {
+                return null;
+            }
+        }
+
+        return null;
     }
 
     private void HandleInteractV2(JsonObject data, int gen)
@@ -558,6 +640,37 @@ public sealed class DanmuService : IDanmuMonitor
         catch (Exception e)
         {
             _log.LogError(e, "Decode INTERACT_WORD_V2 error");
+        }
+    }
+
+    private void HandleGiftV2(JsonObject data, int gen)
+    {
+        try
+        {
+            var pb = Convert.FromBase64String(JsonRead.ReadText(data["pb"]) ?? "");
+            var gift = SendGiftV2.Parser.ParseFrom(pb);
+            foreach (var item in gift.GiftList)
+            {
+                if (item.GiftName.Length == 0)
+                    continue; // 载荷缺礼物名不发空行
+                var num = (int)Math.Min(item.Num, int.MaxValue);
+                _log.LogInformation("Gift V2: {Uname} sent {GiftName} x {Num}", gift.Uname, item.GiftName, num);
+                Publish(
+                    new DanmuEvent(
+                        DanmuEventTypes.Gift,
+                        "",
+                        (long)gift.Uid,
+                        gift.Uname,
+                        gift.Face,
+                        item.GiftName,
+                        num,
+                        item.Action.Length == 0 ? "投喂" : item.Action),
+                    gen);
+            }
+        }
+        catch (Exception e)
+        {
+            _log.LogError(e, "Decode SEND_GIFT_V2 error");
         }
     }
 

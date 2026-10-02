@@ -614,4 +614,161 @@ public class DanmuServiceTests
 
         api.CallCount("SendDanmuAsync").Should().Be(0);
     }
+
+    // --- SEND_GIFT_V2 与表情弹幕（2026-10-02 实抓金丝雀） ---
+
+    private const string GoldenGiftPb =
+        """
+        CPKCxcUHEgvmuIXmvojlvohPSxpKaHR0cHM6Ly9pMi5oZHNsYi5jb20vYmZzL2ZhY2UvMmJkOWVmM2UyYjliNzVjNGZhYWZiMjk0NDBlNTYzNDgxMTI0ZDg3Ny5qcGdCJwiB+e+gBCgLMgnnsonkuJ3lm6I4pvm1BEDAgYMGSMCBgwZQwIGDBlKYBQi88wESD+eyieS4neWboueBr+eJjBgBIAEoZDBkOGRCBGdvbGRKEzQ4MjM0NDExNTExMjQxMjk3OTJQ0Ln+1QZYAWI9YmF0Y2g6Z2lmdDpjb21ib19pZDoyMDI0ODgyNTQ2OjE3ODc0NDkyOjMxMTY0OjE3OTA5NDI0MTYuNjgyNGgKcGR4BYUBAACAP4gBAZIBBuaKleWWgsABy+qAA+oBEAoJWC1I5bCP6LGqELz8wgiKAtgBCLz8wggS0AEKCVgtSOWwj+ixqhJKaHR0cHM6Ly9pMC5oZHNsYi5jb20vYmZzL2ZhY2UvM2Q4M2M0OTdiYThmOTgyOWM5OGY5NzFhYWJhOTFhNjk4NzljY2U2MC5qcGcyVwoJWC1I5bCP6LGqEkpodHRwczovL2kwLmhkc2xiLmNvbS9iZnMvZmFjZS8zZDgzYzQ5N2JhOGY5ODI5Yzk4Zjk3MWFhYmE5MWE2OTg3OWNjZTYwLmpwZzoeCAESGmJpbGliaWxpIOefpeWQjea4uOaIj1VQ5Li7kgIHCIzg1wIQAZoC5QEKSmh0dHBzOi8vczEuaGRzbGIuY29tL2Jmcy9saXZlL2UwNTFkZmQ0NTU3Njc4ZjhlZGNhYzQ5OTNlZDAwYTA5MzVjYmQ5Y2MucG5nEktodHRwczovL2kwLmhkc2xiLmNvbS9iZnMvbGl2ZS8zMmI3OTkxMjBlMTYxNGZhNjI3NWI2ZDE1ZGE3YTUyYjIxZGQwMTlkLndlYnAqSmh0dHBzOi8vaTAuaGRzbGIuY29tL2Jmcy9saXZlLzgxNmY4YjdhYTIxMzI4ODhmY2U5MjhjZGZiMTdiOWNmMjFjYzA4MjMuZ2lmqgIUCAESBwj1t/ACEAISBwiM4NcCEAFYAWoCCAJ6rAII8oLFxQcSwQEKC+a4hea+iOW+iE9LEkpodHRwczovL2kyLmhkc2xiLmNvbS9iZnMvZmFjZS8yYmQ5ZWYzZTJiOWI3NWM0ZmFhZmIyOTQ0MGU1NjM0ODExMjRkODc3LmpwZzJZCgvmuIXmvojlvohPSxJKaHR0cHM6Ly9pMi5oZHNsYi5jb20vYmZzL2ZhY2UvMmJkOWVmM2UyYjliNzVjNGZhYWZiMjk0NDBlNTYzNDgxMTI0ZDg3Ny5qcGc6CyD///////////8BGmAKBuixqumFsRAIGJ739QIgnvf1Aiie9/UCMJ739QJIAVC8/MIIYGp6CSM1NzYyQTc5OYIBCSM1NzYyQTc5OYoBCSM1NzYyQTc5OZIBByNGRkZGRkaaAQkjNTc2MkE3RTY=
+        """;
+
+    [Fact]
+    public async Task Receive_Send_Gift_V2_Decodes_Pb_To_Gift_Event()
+    {
+        var (svc, api, _, _, _, connector) = Create();
+        SetDanmuInfo(api);
+        var socket = await ConnectAsync(svc, connector);
+
+        socket.Enqueue(Command(new JsonObject
+        {
+            ["cmd"] = "SEND_GIFT_V2",
+            ["data"] = new JsonObject { ["dmscore"] = 84, ["pb"] = GoldenGiftPb },
+        }.ToJsonString()));
+
+        var evt = await NextEvent(svc);
+
+        evt.Type.Should().Be(DanmuEventTypes.Gift);
+        evt.Uid.Should().Be(2024882546);
+        evt.Uname.Should().Be("清澈很OK");
+        evt.Face.Should().Be("https://i2.hdslb.com/bfs/face/2bd9ef3e2b9b75c4faafb29440e563481124d877.jpg");
+        evt.GiftName.Should().Be("粉丝团灯牌");
+        evt.Num.Should().Be(1);
+        evt.Action.Should().Be("投喂");
+    }
+
+    [Fact]
+    public async Task Receive_Send_Gift_V2_Invalid_Pb_Yields_No_Event()
+    {
+        var (svc, api, _, _, _, connector) = Create();
+        SetDanmuInfo(api);
+        var socket = await ConnectAsync(svc, connector);
+
+        socket.Enqueue(Command(new JsonObject
+        {
+            ["cmd"] = "SEND_GIFT_V2",
+            ["data"] = new JsonObject { ["pb"] = "@@not-base64@@" },
+        }.ToJsonString()));
+
+        await AssertNoEvent(svc);
+    }
+
+    [Fact]
+    public async Task Receive_Send_Gift_V2_Empty_Gift_List_Yields_No_Event()
+    {
+        var (svc, api, _, _, _, connector) = Create();
+        SetDanmuInfo(api);
+        var socket = await ConnectAsync(svc, connector);
+
+        socket.Enqueue(Command(new JsonObject
+        {
+            ["cmd"] = "SEND_GIFT_V2",
+            ["data"] = new JsonObject { ["pb"] = Convert.ToBase64String([]) },
+        }.ToJsonString()));
+
+        await AssertNoEvent(svc); // 空 gift_list 不发空礼物行
+    }
+
+    private static JsonArray BuildEmoteInfo(string msg, long uid, string uname, JsonNode? extra, int dmType = 0)
+    {
+        var meta = new JsonArray();
+        for (var i = 0; i < 15; i++)
+            meta.Add(i);
+        meta[12] = dmType;
+        meta[13] = dmType == 0
+            ? "{}"
+            : new JsonObject
+            {
+                ["url"] = "https://i0.hdslb.com/bfs/live/5619cc6f1fa73036825a2405b0067400f4b26f3d.png",
+                ["width"] = 162,
+                ["height"] = 162,
+                ["emoticon_unique"] = "room_6732538_107579",
+            };
+        if (extra is not null)
+            meta.Add(extra);
+        return new JsonArray(meta, msg, new JsonArray(uid, uname));
+    }
+
+    [Fact]
+    public async Task Receive_Danmu_Extracts_Emoticons_From_Extra_Emots()
+    {
+        var (svc, api, _, _, _, connector) = Create();
+        SetDanmuInfo(api);
+        var socket = await ConnectAsync(svc, connector);
+        var extra = new JsonObject
+        {
+            ["extra"] = new JsonObject
+            {
+                ["dm_type"] = 0,
+                ["emots"] = new JsonObject
+                {
+                    ["[捂脸]"] = new JsonObject
+                    {
+                        ["url"] = "http://i0.hdslb.com/bfs/live/e6073c6849f7.png",
+                        ["width"] = 20,
+                        ["height"] = 20,
+                    },
+                },
+            }.ToJsonString(),
+        };
+        socket.Enqueue(Command(new JsonObject
+        {
+            ["cmd"] = "DANMU_MSG",
+            ["info"] = BuildEmoteInfo("开播[捂脸]", 5, "tester", extra),
+        }.ToJsonString()));
+
+        var evt = await NextEvent(svc);
+
+        evt.Msg.Should().Be("开播[捂脸]");
+        evt.Emotes.Should().NotBeNull();
+        evt.Emotes!["[捂脸]"].Should().Be(
+            new DanmuEmote("http://i0.hdslb.com/bfs/live/e6073c6849f7.png", 20, 20));
+    }
+
+    [Fact]
+    public async Task Receive_Danmu_Single_Emote_DmType1_Uses_Meta13()
+    {
+        var (svc, api, _, _, _, connector) = Create();
+        SetDanmuInfo(api);
+        var socket = await ConnectAsync(svc, connector);
+        socket.Enqueue(Command(new JsonObject
+        {
+            ["cmd"] = "DANMU_MSG",
+            ["info"] = BuildEmoteInfo("基本功", 9, "sender", extra: null, dmType: 1),
+        }.ToJsonString()));
+
+        var evt = await NextEvent(svc);
+
+        evt.Msg.Should().Be("基本功");
+        evt.Emotes.Should().NotBeNull();
+        evt.Emotes!["基本功"].Should().Be(new DanmuEmote(
+            "https://i0.hdslb.com/bfs/live/5619cc6f1fa73036825a2405b0067400f4b26f3d.png", 162, 162));
+    }
+
+    [Fact]
+    public async Task Receive_Danmu_Without_Emotes_Yields_Null_Emotes()
+    {
+        var (svc, api, _, _, _, connector) = Create();
+        SetDanmuInfo(api);
+        var socket = await ConnectAsync(svc, connector);
+        socket.Enqueue(Command(new JsonObject
+        {
+            ["cmd"] = "DANMU_MSG",
+            ["info"] = BuildEmoteInfo("纯文本", 1, "u", extra: null),
+        }.ToJsonString()));
+
+        var evt = await NextEvent(svc);
+
+        evt.Msg.Should().Be("纯文本");
+        evt.Emotes.Should().BeNull();
+    }
 }
