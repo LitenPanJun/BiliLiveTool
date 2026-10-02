@@ -5,6 +5,7 @@
         x:Class="BiliLiveTool.UI.Views.MainWindow"
         x:DataType="vm:MainViewModel"
         Title="BiliLiveTool"
+        Icon="avares://BiliLiveTool/Assets/app.ico"
         Width="980"
         Height="640"
         MinWidth="720"
