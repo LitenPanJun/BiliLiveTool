@@ -166,6 +166,12 @@ public sealed class UserService
                 "Init user: {Uname} ({Uid})", record.Uname, _masker.MaskString(uid, 2, 2));
 
             var secrets = _vault.Load(uid);
+            if (secrets is null || secrets.Count == 0)
+            {
+                _log.LogWarning(
+                    "凭据未能从钥匙串恢复（条目缺失或钥匙串不可用）：本会话登录态无效，接口将返回未登录。" +
+                    "请重新扫码登录；反复出现请附 app.log 反馈");
+            }
             _api.UpdateCookies(secrets ?? EmptySecrets());
 
             long.TryParse(uid, NumberStyles.Integer, CultureInfo.InvariantCulture, out var parsedUid);

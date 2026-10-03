@@ -1,7 +1,9 @@
 using BiliLiveTool.Core.Security;
 using BiliLiveTool.Infrastructure.Security;
+using BiliLiveTool.Tests.Fakes;
 using FluentAssertions;
 using Latchkey;
+using Microsoft.Extensions.Logging;
 
 namespace BiliLiveTool.Tests.Security;
 
@@ -19,13 +21,72 @@ public sealed class KeyringSecretVaultTests
         // 真实 LatchkeyFactory：有钥匙串的桌面、无 Secret Service 的 CI
         // 容器均须构造成功；不可用即降级，不得抛给组合根，也不得让
         // D-Bus 超时（约 25s）拖死启动——限时 3s 降级，留 10s 余量。
+        var log = new FakeLogger<KeyringSecretVault>();
         var started = System.Diagnostics.Stopwatch.StartNew();
-        var vault = new KeyringSecretVault();
+        var vault = new KeyringSecretVault(log);
         started.Stop();
 
         started.Elapsed.Should().BeLessThan(TimeSpan.FromSeconds(10));
         if (!vault.Available)
+        {
             vault.Load("absent-uid").Should().BeNull();
+            // 降级必须可见：静默丢凭据是 0.2.0 排障教训
+            log.Has(LogLevel.Warning, "memory-only").Should().BeTrue();
+        }
+    }
+
+    [Fact]
+    public void Persist_Failure_Logs_Warning_And_Keeps_Session_Cache()
+    {
+        var log = new FakeLogger<KeyringSecretVault>();
+        var vault = new KeyringSecretVault(new ThrowingLatchkey(), log);
+
+        vault.Save(Uid, new Dictionary<string, SecureCredential>
+        {
+            ["SESSDATA"] = new SecureCredential("locked"),
+        });
+
+        log.Has(LogLevel.Warning, "Keyring persist failed").Should().BeTrue();
+        vault.Load(Uid)!["SESSDATA"].DangerousGetValue().Should().Be("locked");
+    }
+
+    [Fact]
+    public void Read_Failure_Logs_Warning_And_Treats_Entry_As_Absent()
+    {
+        var log = new FakeLogger<KeyringSecretVault>();
+        var vault = new KeyringSecretVault(new ThrowingLatchkey(), log);
+
+        vault.Load(Uid).Should().BeNull();
+
+        log.Has(LogLevel.Warning, "Keyring read failed").Should().BeTrue();
+    }
+
+    [Fact]
+    public void Downgraded_Save_Retries_Store_Creation_Exactly_Once()
+    {
+        var store = new FakeLatchkey();
+        var attempts = 0;
+        var log = new FakeLogger<KeyringSecretVault>();
+        var vault = new KeyringSecretVault(
+            null, log, _ =>
+            {
+                attempts++;
+                return store;
+            });
+
+        vault.Save(Uid, new Dictionary<string, SecureCredential>
+        {
+            ["SESSDATA"] = new SecureCredential("recovered"),
+        });
+        vault.Save("7", new Dictionary<string, SecureCredential>
+        {
+            ["SESSDATA"] = new SecureCredential("second"),
+        });
+
+        attempts.Should().Be(1); // 每会话只重试一次，避免后续 Save 反复等超时
+        store.Entries.Should().ContainKey("account:" + Uid);
+        store.Entries.Should().ContainKey("account:7");
+        log.Has(LogLevel.Warning, "Retrying keyring store creation").Should().BeTrue();
     }
 
     [Fact]
@@ -66,7 +127,7 @@ public sealed class KeyringSecretVaultTests
     [Fact]
     public void Unavailable_Backend_Stays_In_Memory_Only()
     {
-        var vault = new KeyringSecretVault(null);
+        var vault = new KeyringSecretVault((ILatchkey?)null);
         vault.Available.Should().BeFalse();
         vault.Save(Uid, new Dictionary<string, SecureCredential>
         {
@@ -76,7 +137,7 @@ public sealed class KeyringSecretVaultTests
         vault.Load(Uid)!["SESSDATA"].DangerousGetValue().Should().Be("memory-only");
 
         // 重启等价物：新实例无从恢复，也不曾写过任何文件
-        new KeyringSecretVault(null).Load(Uid).Should().BeNull();
+        new KeyringSecretVault((ILatchkey?)null).Load(Uid).Should().BeNull();
     }
 
     [Fact]

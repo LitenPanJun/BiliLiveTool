@@ -8,6 +8,7 @@ using BiliLiveTool.Services.Auth;
 using BiliLiveTool.Tests.Fakes;
 using BiliLiveTool.Services.User;
 using FluentAssertions;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 
 namespace BiliLiveTool.Tests.User;
@@ -17,7 +18,8 @@ public class UserServiceTests
     private static readonly CancellationToken Ct = CancellationToken.None;
 
     private static (UserService Service, FakeBilibiliApiClient Api, AuthSessionStore Sessions,
-        InMemoryAccountStore Accounts, InMemorySecretVault Vault, FakeDanmuMonitor Danmu) Create()
+        InMemoryAccountStore Accounts, InMemorySecretVault Vault, FakeDanmuMonitor Danmu)
+        Create(ILogger<UserService>? log = null)
     {
         var api = new FakeBilibiliApiClient();
         var sessions = new AuthSessionStore();
@@ -25,7 +27,8 @@ public class UserServiceTests
         var vault = new InMemorySecretVault();
         var danmu = new FakeDanmuMonitor();
         var service = new UserService(
-            api, sessions, accounts, vault, danmu, new SecretMasker(), NullLogger<UserService>.Instance);
+            api, sessions, accounts, vault, danmu, new SecretMasker(),
+            log ?? NullLogger<UserService>.Instance);
         return (service, api, sessions, accounts, vault, danmu);
     }
 
@@ -196,6 +199,25 @@ public class UserServiceTests
     }
 
     // --- InitCurrentUser ---
+
+    [Fact]
+    public void InitCurrentUser_Vault_Miss_Logs_Warning_And_Keeps_Empty_Cookies()
+    {
+        var log = new FakeLogger<UserService>();
+        var (svc, api, sessions, accounts, _, _) = Create(log);
+        accounts.Save(new AccountRecord
+        {
+            Uid = "42",
+            RoomId = "12345",
+        }); // record 在、钥匙串条目缺：正是 0.2.0 「账号已恢复 + 全接口 -101」故障态
+
+        svc.InitCurrentUser();
+
+        log.Has(LogLevel.Warning, "凭据未能从钥匙串恢复").Should().BeTrue();
+        api.CookieUpdates.Should().HaveCount(1);
+        api.CookieUpdates[0].Should().BeEmpty();
+        sessions.CurrentSnapshot.Uid.Should().Be(42);
+    }
 
     [Fact]
     public void InitCurrentUser_Restores_Session_And_Cookies()
