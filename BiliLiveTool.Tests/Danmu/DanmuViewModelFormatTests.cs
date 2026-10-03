@@ -72,4 +72,18 @@ public class DanmuViewModelFormatTests
         parts.Should().HaveCount(1);
         parts![0].IsImage.Should().BeTrue(); // 无发送人不注入空文本段
     }
+
+    [Fact]
+    public void Format_Parts_Concatenate_To_Display()
+    {
+        // 行级不丢失不变式：片段（发送人 + token + 文本）首尾相接
+        // 必须等于复制/检索用的 Display 全文
+        var evt = new DanmuEvent(
+            DanmuEventTypes.Danmu, "开播[捂脸]😀收", 5, "tester", Emotes: Emotes());
+
+        var (display, parts) = DanmuViewModel.Format(evt);
+
+        parts.Should().NotBeNull();
+        string.Concat(parts!.Select(p => p.Text)).Should().Be(display);
+    }
 }

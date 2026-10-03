@@ -84,4 +84,64 @@ public class DanmuSegmentTests
         seg.ShowImage.Should().BeFalse();
         seg.Bitmap.Should().BeNull(); // 文本段读取不触发下载
     }
+
+    // --- 不丢失不变式：片段 Text 首尾相接 == 原消息（图片段 Text 即 token） ---
+
+    private static string Concat(IReadOnlyList<DanmuSegment> parts) =>
+        string.Concat(parts.Select(p => p.Text));
+
+    [Fact]
+    public void Build_Mixed_Text_And_Multiple_Emotes_Restores_Original()
+    {
+        const string msg = "开播啦[捂脸]中段[dog]结束[捂脸]";
+
+        var parts = DanmuSegment.Build(msg, Emotes());
+
+        parts.Should().NotBeNull();
+        Concat(parts!).Should().Be(msg);
+    }
+
+    [Fact]
+    public void Build_Unknown_Token_And_Emoji_In_Text_Are_Not_Lost()
+    {
+        // 生僻/未收录 token 保留在文本段；😀 为代理对，切分不得伤及码点
+        const string msg = "前段[未知表情]😀中段[捂脸]";
+
+        var parts = DanmuSegment.Build(msg, Emotes());
+
+        parts.Should().NotBeNull();
+        Concat(parts!).Should().Be(msg);
+        parts![0].Text.Should().Be("前段[未知表情]😀中段");
+    }
+
+    [Fact]
+    public void Build_Zwj_Emoji_Sequence_Not_Split_By_Token_Boundary()
+    {
+        const string msg = "👨‍👩‍👧‍👦[捂脸]尾巴";
+
+        var parts = DanmuSegment.Build(msg, Emotes());
+
+        parts.Should().NotBeNull();
+        Concat(parts!).Should().Be(msg); // ZWJ 拼合 emoji 整体留在文本段
+        parts![0].Text.Should().Be("👨‍👩‍👧‍👦");
+    }
+
+    [Fact]
+    public void Build_Token_At_Start_And_Adjacent_Tokens_Restore_Original()
+    {
+        const string msg = "[捂脸][捂脸]头[未知]尾[dog]";
+
+        var parts = DanmuSegment.Build(msg, Emotes());
+
+        parts.Should().NotBeNull();
+        Concat(parts!).Should().Be(msg);
+    }
+
+    [Fact]
+    public void Build_Unclosed_Bracket_Falls_Back_To_Full_Text()
+    {
+        const string msg = "残缺[捂脸没有右括号";
+
+        DanmuSegment.Build(msg, Emotes()).Should().BeNull(); // 整行走纯文本，原文不丢
+    }
 }
