@@ -23,6 +23,9 @@ public sealed class BilibiliApiClient : IBilibiliApiClient
 
     private static readonly TimeSpan WbiKeyCacheDuration = TimeSpan.FromHours(24);
 
+    /// <summary>命名 HttpClient（保持日志类别 HttpClient.IBilibiliApiClient 不变）。</summary>
+    public const string HttpClientName = "IBilibiliApiClient";
+
     private readonly HttpClient _http;
     private readonly AppSigner _appSigner = new();
     private readonly WbiSigner _wbiSigner = new();

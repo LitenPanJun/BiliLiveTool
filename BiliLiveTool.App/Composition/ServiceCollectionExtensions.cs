@@ -42,8 +42,21 @@ internal static class ServiceCollectionExtensions
 
         // 会话与服务层
         services.AddSingleton<AuthSessionStore>();
-        services.AddHttpClient<IBilibiliApiClient, BilibiliApiClient>(client =>
-            client.Timeout = TimeSpan.FromSeconds(10));
+        // API 客户端必须全服务共享单实例：AddHttpClient<,> 是瞬态注册，曾导致
+        // Auth/User/Live/Danmu 各持独立 cookie jar——登录与启动恢复只写进各自
+        // 实例，重启后 Live/Danmu/Auth 的请求裸奔（-101、弹幕鉴权被拒），
+        // 全靠进程内 CookieContainer 掩盖、重启即现形。原版亦为单一 api 对象。
+        services.AddHttpClient(BilibiliApiClient.HttpClientName, client =>
+            client.Timeout = TimeSpan.FromSeconds(10))
+            .ConfigurePrimaryHttpMessageHandler(() => new SocketsHttpHandler
+            {
+                // Cookie 唯一来源是 _cookies 手工头（对齐原版只发自身字典），
+                // 关闭容器避免第二真相源随重启/回收丢失与重复 Cookie 头
+                UseCookies = false,
+                PooledConnectionLifetime = TimeSpan.FromMinutes(5),
+            });
+        services.AddSingleton<IBilibiliApiClient>(sp => new BilibiliApiClient(
+            sp.GetRequiredService<IHttpClientFactory>().CreateClient(BilibiliApiClient.HttpClientName)));
         services.AddSingleton<UserService>();
         services.AddSingleton<LiveService>();
         services.AddSingleton<AuthService>();
