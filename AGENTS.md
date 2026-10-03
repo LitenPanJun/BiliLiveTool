@@ -75,3 +75,4 @@ Solution `BiliLiveTool`，5 工程，`net10.0`，命名空间与目录一一对�
 - 颗粒度：**line > file > feat** —— 尽量小步提交，一次提交聚焦单点改动/单个文件，避免大块 feature 提交。
 - 摘要行：以**标准英文类型前缀**开头（Conventional Commits：`feat` / `fix` / `docs` / `chore` / `refactor` / `test` / `perf` / `build` / `ci`），可用时在类型后加 `(...)` 括号注解范围，如 `docs(README): ...`。
 - 摘要其余部分与正文说明**用中文**：祈使句、首行 ≤ 72 字符、正文解释"为什么"。
+- **署名唯一**：author/committer 一律 `Zachary Pan <xiaopanjun233@163.com>`；正文禁止 `Co-Authored-By:` / `Authored-by:` 等一切合著或 AI 署名 trailer——GitHub 会把 `noreply@anthropic.com` 解析成 claude 账号，在提交页显示为「Claude」贡献者。`.githooks/commit-msg` 会拒绝此类提交（经 `git config core.hooksPath .githooks` 启用，勿删）。
