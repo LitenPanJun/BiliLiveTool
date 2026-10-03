@@ -158,7 +158,7 @@ public sealed partial class DanmuViewModel : ObservableObject
             Messages.RemoveAt(0);
     }
 
-    private static (string Display, IReadOnlyList<DanmuSegment>? Parts) Format(DanmuEvent evt)
+    internal static (string Display, IReadOnlyList<DanmuSegment>? Parts) Format(DanmuEvent evt)
     {
         var display = evt.Type switch
         {
@@ -169,9 +169,21 @@ public sealed partial class DanmuViewModel : ObservableObject
                 : $"{evt.Uname} {evt.Action} {evt.GiftName} x{evt.Num}",
             _ => evt.Msg, // system：连接成功/熔断等直出
         };
-        var parts = evt.Type == DanmuEventTypes.Danmu
-            ? DanmuSegment.Build(evt.Msg, evt.Emotes)
-            : null;
+        IReadOnlyList<DanmuSegment>? parts = null;
+        if (evt.Type == DanmuEventTypes.Danmu)
+        {
+            var built = DanmuSegment.Build(evt.Msg, evt.Emotes);
+            if (built is not null)
+            {
+                // 行内片段走图片模板时纯文本 Display 被隐藏，发送人须并入片段
+                // 首段，否则表情弹幕只显示内容不显示发送人
+                var line = new List<DanmuSegment>();
+                if (evt.Uname.Length > 0)
+                    line.Add(DanmuSegment.FromText($"{evt.Uname}: "));
+                line.AddRange(built);
+                parts = line;
+            }
+        }
         return (display, parts);
     }
 }
