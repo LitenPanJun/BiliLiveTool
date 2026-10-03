@@ -1,0 +1,14 @@
+#!/bin/sh
+# 拒绝合著/AI 署名 trailer：本仓库署名唯一为 Zachary Pan。
+# 教训：Co-Authored-By: ... <noreply@anthropic.com> 会被 GitHub 解析成
+# claude 账号，在提交页显示为「Claude」贡献者（见 AGENTS.md Git 提交约定）。
+msg="$1"
+
+if grep -iqE '^[[:space:]]*(co-authored-by|authored-by)[[:space:]]*:' "$msg" ||
+   grep -iqE 'generated with|claude code' "$msg"; then
+    echo "提交被拒绝：正文含合著/生成署名 trailer。" >&2
+    echo "本仓库署名唯一为 Zachary Pan，请删除相关行后重试。" >&2
+    exit 1
+fi
+
+exit 0
